@@ -16,7 +16,7 @@ st.title("📐 QCM : Produits Vectoriels Progressifs")
 # Durée maximale du test (5 minutes = 300 secondes)
 DUREE_MAX_SECONDES = 300
 
-# Équivalences géométriques des axes (selon les figures de changement de base)
+# Équivalences géométriques des axes
 EQUIVALENCES_VECTEURS = {
     ("z", "0"): [("z", "0"), ("z", "1")],
     ("z", "1"): [("z", "0"), ("z", "1")],
@@ -194,6 +194,7 @@ if "test_started" not in st.session_state:
     st.session_state.step = 0
     st.session_state.score = 0
     st.session_state.reponses_historique = []
+    st.session_state.show_popup = False
 
 if not st.session_state.test_started:
     with st.form("form_identite"):
@@ -212,7 +213,8 @@ if not st.session_state.test_started:
                 st.session_state.prenom = prenom
                 st.session_state.classe = classe
                 st.session_state.test_started = True
-                st.session_state.start_time = time.time()  # Départ du chrono
+                st.session_state.show_popup = True
+                st.session_state.start_time = time.time()
 
                 q_list = []
                 for niv in NIVEAUX:
@@ -229,17 +231,23 @@ if not st.session_state.test_started:
 # --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE ---
 elif st.session_state.step < 4:
 
-    # Calcul du temps restant
+    # Affichage de la notification/pop-up de démarrage
+    if st.session_state.get("show_popup", False):
+        st.toast("⏱️ **Attention : Le test est limité à 5 minutes maximum !**", icon="⏳")
+        st.info("⏱️ **Le test dure 5 minutes maximum.** Répondez le plus rapidement possible !")
+        st.session_state.show_popup = False
+
+    # Calcul du temps
     temps_ecoule = time.time() - st.session_state.start_time
     temps_restant = int(DUREE_MAX_SECONDES - temps_ecoule)
 
-    # Si le temps est écoulé, fin automatique du test
+    # Si le temps est écoulé
     if temps_restant <= 0:
-        st.error("⏳ Temps écoulé ! Vos réponses enregistrées ont été soumises.")
+        st.error("⏳ **Temps écoulé !** Vos réponses enregistrées ont été soumises.")
         st.session_state.step = 4
+        st.session_state.end_time = time.time()
         st.rerun()
 
-    # Affichage du temps restant (Minutes : Secondes)
     minutes = temps_restant // 60
     secondes = temps_restant % 60
     color = "red" if temps_restant < 60 else "normal"
@@ -274,25 +282,15 @@ elif st.session_state.step < 4:
     if q["type"] == "colonnes":
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
-            signe = st.radio(
-                "Signe", ["+", "-"], key=f"signe_{st.session_state.step}"
-            )
+            signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
         with c2:
-            trigo = st.radio(
-                "Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}"
-            )
+            trigo = st.radio("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
         with c3:
-            angle = st.radio(
-                "Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}"
-            )
+            angle = st.radio("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
         with c4:
-            vecteur = st.radio(
-                "Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}"
-            )
+            vecteur = st.radio("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
         with c5:
-            indice = st.radio(
-                "Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}"
-            )
+            indice = st.radio("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -338,6 +336,8 @@ elif st.session_state.step < 4:
                 "exact": exact,
             })
             st.session_state.step += 1
+            if st.session_state.step == 4:
+                st.session_state.end_time = time.time()
             st.rerun()
 
     # --- CAS 2 : CHOIX MULTIPLES / QCM (Niveaux C & D) ---
@@ -362,6 +362,8 @@ elif st.session_state.step < 4:
                 "exact": exact,
             })
             st.session_state.step += 1
+            if st.session_state.step == 4:
+                st.session_state.end_time = time.time()
             st.rerun()
 
 # --- 3. BILAN ET SYNCHRONISATION ---
@@ -370,7 +372,18 @@ else:
     if note_finale >= 15:
         st.balloons()
 
+    # Calcul du temps total utilisé
+    if "end_time" not in st.session_state:
+        st.session_state.end_time = time.time()
+
+    duree_totale_sec = int(st.session_state.end_time - st.session_state.start_time)
+    duree_totale_sec = min(duree_totale_sec, DUREE_MAX_SECONDES)  # Capé à 300s max
+    m_passe = duree_totale_sec // 60
+    s_passe = duree_totale_sec % 60
+    temps_passe_str = f"{m_passe:02d}:{s_passe:02d}"
+
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
+    st.info(f"⏱️ Temps réalisé : **{temps_passe_str}**")
     st.markdown("---")
 
     for idx, resp in enumerate(st.session_state.reponses_historique):
@@ -378,7 +391,7 @@ else:
         st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
         st.latex(f"{resp['enonce']} = {resp['reponse_display']}")
 
-    # Compléter les réponses manquantes par "Non répondu" si le chrono s'est écoulé
+    # Compléter si temps écoulé avant la 4e question
     q_ans = len(st.session_state.reponses_historique)
     q1_val = st.session_state.reponses_historique[0]["reponse_sheet"] if q_ans > 0 else "'Non répondu"
     q2_val = st.session_state.reponses_historique[1]["reponse_sheet"] if q_ans > 1 else "'Non répondu"
@@ -389,6 +402,7 @@ else:
         df_existant = conn.read(ttl=0)
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Temps_Passe": f"'{temps_passe_str}",
             "Nom": st.session_state.nom,
             "Prenom": st.session_state.prenom,
             "Classe": st.session_state.classe,
