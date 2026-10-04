@@ -5,7 +5,7 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# Configuration
+# Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
@@ -31,7 +31,7 @@ def verifier_vecteur_egal(vec_user, ind_user, vec_sol, ind_sol):
     return (vec_user, ind_user) in equivalents
 
 
-# --- BANQUE DE QUESTIONS ---
+# --- BANQUE DE QUESTIONS CORRIGÉE ---
 BANQUE_QUESTIONS = {
     "A": [
         {
@@ -90,14 +90,26 @@ BANQUE_QUESTIONS = {
             "type": "qcm",
             "enonce": r"\vec{z}_2 \wedge \vec{x}_1",
             "propositions": [
+                r"+\cos(\theta)\vec{y}_1",
+                r"-\cos(\theta)\vec{y}_1",
                 r"+\sin(\theta)\vec{y}_1",
-                r"-\sin(\theta)\vec{y}_1",
                 r"+\cos(\theta)\vec{x}_1",
-                r"+\sin(\theta)\vec{y}_2",
             ],
             "solution_idx": 0,
             "description": "Niveau C (3/4) : Fig 2 vers Fig 1",
-        }
+        },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{y}_3 \wedge \vec{z}_1",
+            "propositions": [
+                r"+\cos(\beta)\vec{x}_2",
+                r"-\cos(\beta)\vec{x}_2",
+                r"+\sin(\beta)\vec{x}_2",
+                r"-\sin(\beta)\vec{y}_2",
+            ],
+            "solution_idx": 0,
+            "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
+        },
     ],
     "D": [
         {
