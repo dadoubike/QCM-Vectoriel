@@ -228,7 +228,7 @@ if not st.session_state.test_started:
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
 
-# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE EN ARRIÈRE-PLAN ---
+# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE DYNAMIQUE ---
 elif st.session_state.step < 4:
 
     @st.fragment(run_every=1)
@@ -279,19 +279,28 @@ elif st.session_state.step < 4:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # --- CAS 1 : INTERFACE 5 COLONNES (Niveaux A & B) ---
+    # --- CAS 1 : INTERFACE COMPACTE OPTION B (2 Colonnes & Radio Horizontaux) ---
     if q["type"] == "colonnes":
-        c1, c2, c3, c4, c5 = st.columns(5)
-        with c1:
-            signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
-        with c2:
-            trigo = st.radio("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
-        with c3:
-            angle = st.radio("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
-        with c4:
-            vecteur = st.radio("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
-        with c5:
-            indice = st.radio("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
+        col_gauche, col_droite = st.columns(2)
+
+        with col_gauche:
+            signe = st.radio(
+                "Signe", ["+", "-"], horizontal=True, key=f"signe_{st.session_state.step}"
+            )
+            trigo = st.radio(
+                "Trigo", ["1", "sin", "cos"], horizontal=True, key=f"trigo_{st.session_state.step}"
+            )
+            angle = st.radio(
+                "Angle", ["α", "θ", "β"], horizontal=True, key=f"angle_{st.session_state.step}"
+            )
+
+        with col_droite:
+            vecteur = st.radio(
+                "Vecteur", ["x", "y", "z", "0"], horizontal=True, key=f"vec_{st.session_state.step}"
+            )
+            indice = st.radio(
+                "Indice", ["0", "1", "2", "3"], horizontal=True, key=f"ind_{st.session_state.step}"
+            )
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -386,7 +395,6 @@ else:
     st.info(f"⏱ Temps réalisé : **{temps_passe_str}**")
     st.markdown("---")
 
-    # Affichage des corrections
     for idx, resp in enumerate(st.session_state.reponses_historique):
         symbole = "✅" if resp["exact"] else "❌"
         st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
@@ -397,10 +405,9 @@ else:
     q_ans = len(st.session_state.reponses_historique)
     q1_val = st.session_state.reponses_historique[0]["reponse_sheet"] if q_ans > 0 else "'Non répondu"
     q2_val = st.session_state.reponses_historique[1]["reponse_sheet"] if q_ans > 1 else "'Non répondu"
-    q3_val = st.session_state.reponses_historique[2]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
+    q3_val = st.session_state.reponses_historique[2]["reponse_sheet"] if q_ans > 2 else "'Non répondu"
     q4_val = st.session_state.reponses_historique[3]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
 
-    # Enregistrement + Affichage du classement
     try:
         df_existant = conn.read(ttl=0)
         
@@ -426,23 +433,17 @@ else:
         # --- GENERATION DU CLASSEMENT (LEADERBOARD) ---
         st.subheader("🏆 Classement Général (Top Score & Vitesse)")
 
-        # Nettoyage et formatage du DataFrame pour le tri
         df_leaderboard = df_maj.copy()
-        
-        # Nettoyage de la colonne Temps_Passe pour le tri
         df_leaderboard["Temps_Clean"] = df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
         df_leaderboard["Note"] = pd.to_numeric(df_leaderboard["Note"], errors="coerce")
 
-        # Tri : Note décroissante, puis Temps croissant
         df_leaderboard = df_leaderboard.sort_values(
             by=["Note", "Temps_Clean"], ascending=[False, True]
         ).reset_index(drop=True)
 
-        # Ajout du rang (1, 2, 3...)
         df_leaderboard.index = df_leaderboard.index + 1
         df_leaderboard.index.name = "Rang"
 
-        # Sélection des colonnes à afficher
         df_display = df_leaderboard[["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]].rename(
             columns={"Temps_Clean": "Temps"}
         )
