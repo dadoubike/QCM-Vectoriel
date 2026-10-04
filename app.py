@@ -16,7 +16,7 @@ st.title("📐 QCM : Produits Vectoriels Progressifs")
 # Durée maximale du test (5 minutes = 300 secondes)
 DUREE_MAX_SECONDES = 300
 
-# Équivalences géométriques des axes (selon les figures de changement de base)
+# Équivalences géométriques des axes
 EQUIVALENCES_VECTEURS = {
     ("z", "0"): [("z", "0"), ("z", "1")],
     ("z", "1"): [("z", "0"), ("z", "1")],
@@ -64,7 +64,6 @@ BANQUE_QUESTIONS = {
         },
     ],
     "B": [
-        # Cosinus de la première figure
         {
             "type": "colonnes",
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
@@ -113,7 +112,6 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-        # Fin de la première figure en cosinus
         {
             "type": "colonnes",
             "enonce": r"\vec{z}_2 \wedge \vec{y}_1",
@@ -230,11 +228,11 @@ if not st.session_state.test_started:
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
 
-# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE DYNAMIQUE ---
+# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE EN ARRIÈRE-PLAN ---
 elif st.session_state.step < 4:
 
-    # Fragment isolé pour mettre à jour le chrono toutes les secondes sans recharger les formulaires
-    @st.fragment
+    # Le paramètre run_every=1 gère la mise à jour automatique chaque seconde
+    @st.fragment(run_every=1)
     def afficher_chronometre():
         temps_ecoule = time.time() - st.session_state.start_time
         temps_restant = int(DUREE_MAX_SECONDES - temps_ecoule)
@@ -254,9 +252,6 @@ elif st.session_state.step < 4:
             value=f"{minutes:02d}:{secondes:02d}",
             delta_color=color,
         )
-
-        time.sleep(1)
-        st.rerun(scope="fragment")
 
     afficher_chronometre()
 
@@ -289,25 +284,15 @@ elif st.session_state.step < 4:
     if q["type"] == "colonnes":
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
-            signe = st.radio(
-                "Signe", ["+", "-"], key=f"signe_{st.session_state.step}"
-            )
+            signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
         with c2:
-            trigo = st.radio(
-                "Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}"
-            )
+            trigo = st.radio("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
         with c3:
-            angle = st.radio(
-                "Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}"
-            )
+            angle = st.radio("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
         with c4:
-            vecteur = st.radio(
-                "Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}"
-            )
+            vecteur = st.radio("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
         with c5:
-            indice = st.radio(
-                "Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}"
-            )
+            indice = st.radio("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -399,7 +384,7 @@ else:
     temps_passe_str = f"{m_passe:02d}:{s_passe:02d}"
 
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
-    st.info(f"⏱️️ Temps réalisé : **{temps_passe_str}**")
+    st.info(f"⏱ Temps réalisé : **{temps_passe_str}**")
     st.markdown("---")
 
     for idx, resp in enumerate(st.session_state.reponses_historique):
