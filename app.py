@@ -9,17 +9,10 @@ from streamlit_gsheets import GSheetsConnection
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# CSS pour forcer le maintien en 2 colonnes sur smartphone
+# CSS pour compacter les marges et optimiser l'affichage mobile
 st.markdown(
     """
     <style>
-    /* Forcer les colonnes Streamlit à rester côte à côte sur smartphone */
-    div[data-testid="column"] {
-        width: 48% !important;
-        flex: 1 1 48% !important;
-        min-width: 48% !important;
-    }
-    /* Compacter l'affichage des boutons radio */
     div[data-testid="stRadio"] > label {
         font-size: 0.85rem !important;
         font-weight: bold !important;
@@ -270,7 +263,7 @@ elif st.session_state.step < 4:
         color = "red" if temps_restant < 60 else "normal"
 
         st.metric(
-            label="⏱️️ Temps restant",
+            label="⏱ Temps restant",
             value=f"{minutes:02d}:{secondes:02d}",
             delta_color=color,
         )
@@ -278,7 +271,7 @@ elif st.session_state.step < 4:
     afficher_chronometre()
 
     if st.session_state.get("show_popup", False):
-        st.info("⏱️ **Le test dure 5 minutes maximum.** Répondez le plus rapidement possible !")
+        st.info("⏱️️ **Le test dure 5 minutes maximum.** Répondez le plus rapidement possible !")
         st.session_state.show_popup = False
 
     niveau_courant = NIVEAUX[st.session_state.step]
@@ -293,8 +286,13 @@ elif st.session_state.step < 4:
         text=f"Question {st.session_state.step + 1} / 4 — Niveau {niveau_courant}",
     )
 
+    # --- IMAGE AVEC OPTION ZOOM PLEIN ÉCRAN ---
     try:
-        st.image("3Figs_geom.png", use_container_width=True)
+        st.image(
+            "3Figs_geom.png",
+            use_container_width=True,
+            caption="🔍 Appuyez sur l'icône 'Plein écran' en haut à droite de l'image pour l'agrandir.",
+        )
     except Exception:
         st.warning("Image '3Figs_geom.png' introuvable.")
 
@@ -302,7 +300,7 @@ elif st.session_state.step < 4:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # --- CAS 1 : INTERFACE 2 COLONNES FORCEES (Niveaux A & B) ---
+    # --- CAS 1 : INTERFACE 2 COLONNES (Niveaux A & B) ---
     if q["type"] == "colonnes":
         col_gauche, col_droite = st.columns(2)
 
