@@ -16,7 +16,7 @@ st.title("📐 QCM : Produits Vectoriels Progressifs")
 # Durée maximale du test (5 minutes = 300 secondes)
 DUREE_MAX_SECONDES = 300
 
-# Équivalences géométriques des axes
+# Équivalences géométriques des axes (selon les figures de changement de base)
 EQUIVALENCES_VECTEURS = {
     ("z", "0"): [("z", "0"), ("z", "1")],
     ("z", "1"): [("z", "0"), ("z", "1")],
@@ -64,6 +64,7 @@ BANQUE_QUESTIONS = {
         },
     ],
     "B": [
+        # Cosinus de la première figure
         {
             "type": "colonnes",
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
@@ -112,6 +113,7 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Figure 0 et 1",
         },
+        # Fin de la première figure en cosinus
         {
             "type": "colonnes",
             "enonce": r"\vec{z}_2 \wedge \vec{y}_1",
@@ -228,34 +230,39 @@ if not st.session_state.test_started:
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
 
-# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE ---
+# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE DYNAMIQUE ---
 elif st.session_state.step < 4:
 
-    # Affichage de la notification/pop-up de démarrage
+    # Fragment isolé pour mettre à jour le chrono toutes les secondes sans recharger les formulaires
+    @st.fragment
+    def afficher_chronometre():
+        temps_ecoule = time.time() - st.session_state.start_time
+        temps_restant = int(DUREE_MAX_SECONDES - temps_ecoule)
+
+        if temps_restant <= 0:
+            st.error("⏳ **Temps écoulé !** Le test est terminé.")
+            st.session_state.step = 4
+            st.session_state.end_time = time.time()
+            st.rerun()
+
+        minutes = temps_restant // 60
+        secondes = temps_restant % 60
+        color = "red" if temps_restant < 60 else "normal"
+
+        st.metric(
+            label="⏱️ Temps restant",
+            value=f"{minutes:02d}:{secondes:02d}",
+            delta_color=color,
+        )
+
+        time.sleep(1)
+        st.rerun(scope="fragment")
+
+    afficher_chronometre()
+
     if st.session_state.get("show_popup", False):
-        st.toast("⏱️ **Attention : Le test est limité à 5 minutes maximum !**", icon="⏳")
         st.info("⏱️ **Le test dure 5 minutes maximum.** Répondez le plus rapidement possible !")
         st.session_state.show_popup = False
-
-    # Calcul du temps
-    temps_ecoule = time.time() - st.session_state.start_time
-    temps_restant = int(DUREE_MAX_SECONDES - temps_ecoule)
-
-    # Si le temps est écoulé
-    if temps_restant <= 0:
-        st.error("⏳ **Temps écoulé !** Vos réponses enregistrées ont été soumises.")
-        st.session_state.step = 4
-        st.session_state.end_time = time.time()
-        st.rerun()
-
-    minutes = temps_restant // 60
-    secondes = temps_restant % 60
-    color = "red" if temps_restant < 60 else "normal"
-    st.metric(
-        label="⏱️ Temps restant",
-        value=f"{minutes:02d}:{secondes:02d}",
-        delta_color=color,
-    )
 
     niveau_courant = NIVEAUX[st.session_state.step]
     q = st.session_state.questions_selectionnees[st.session_state.step]
@@ -282,15 +289,25 @@ elif st.session_state.step < 4:
     if q["type"] == "colonnes":
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
-            signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
+            signe = st.radio(
+                "Signe", ["+", "-"], key=f"signe_{st.session_state.step}"
+            )
         with c2:
-            trigo = st.radio("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
+            trigo = st.radio(
+                "Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}"
+            )
         with c3:
-            angle = st.radio("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
+            angle = st.radio(
+                "Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}"
+            )
         with c4:
-            vecteur = st.radio("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
+            vecteur = st.radio(
+                "Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}"
+            )
         with c5:
-            indice = st.radio("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
+            indice = st.radio(
+                "Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}"
+            )
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -372,18 +389,17 @@ else:
     if note_finale >= 15:
         st.balloons()
 
-    # Calcul du temps total utilisé
     if "end_time" not in st.session_state:
         st.session_state.end_time = time.time()
 
     duree_totale_sec = int(st.session_state.end_time - st.session_state.start_time)
-    duree_totale_sec = min(duree_totale_sec, DUREE_MAX_SECONDES)  # Capé à 300s max
+    duree_totale_sec = min(duree_totale_sec, DUREE_MAX_SECONDES)
     m_passe = duree_totale_sec // 60
     s_passe = duree_totale_sec % 60
     temps_passe_str = f"{m_passe:02d}:{s_passe:02d}"
 
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
-    st.info(f"⏱️ Temps réalisé : **{temps_passe_str}**")
+    st.info(f"⏱️️ Temps réalisé : **{temps_passe_str}**")
     st.markdown("---")
 
     for idx, resp in enumerate(st.session_state.reponses_historique):
@@ -391,7 +407,6 @@ else:
         st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
         st.latex(f"{resp['enonce']} = {resp['reponse_display']}")
 
-    # Compléter si temps écoulé avant la 4e question
     q_ans = len(st.session_state.reponses_historique)
     q1_val = st.session_state.reponses_historique[0]["reponse_sheet"] if q_ans > 0 else "'Non répondu"
     q2_val = st.session_state.reponses_historique[1]["reponse_sheet"] if q_ans > 1 else "'Non répondu"
