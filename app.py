@@ -5,12 +5,10 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
+# Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# URL de votre feuille Google Sheet
-SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZvUQ2rRflev8/edit"
-
-# Initialisation standard de la connexion
+# Connection à Google Sheets (définie dans les Secrets)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 QCM : Produits Vectoriels Progressifs")
@@ -94,6 +92,7 @@ if not st.session_state.test_started:
                 st.session_state.groupe = groupe
                 st.session_state.test_started = True
                 
+                # Sélection d'une question au hasard par niveau
                 st.session_state.questions_selectionnees = [
                     random.choice(BANQUE_QUESTIONS[niv]) for niv in NIVEAUX
                 ]
@@ -108,15 +107,17 @@ elif st.session_state.step < 4:
     st.caption(f"Étudiant : **{st.session_state.nom} {st.session_state.prenom}** ({st.session_state.groupe})")
     st.progress((st.session_state.step) / 4, text=f"Question {st.session_state.step + 1} / 4 — Niveau {niveau_courant}")
 
+    # Image de référence
     try:
         st.image("3Figs_geom.png", use_container_width=True)
     except Exception:
-        st.warning("Image '3Figs_geom.png' non trouvée dans le dépôt GitHub.")
+        st.warning("Image '3Figs_geom.png' introuvable dans le dépôt GitHub.")
 
     st.markdown("---")
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
+    # Choix en 5 colonnes
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
@@ -129,6 +130,7 @@ elif st.session_state.step < 4:
     with c5:
         angle = st.radio("Angle", ["α", "β", "θ", "γ"], key=f"angle_{st.session_state.step}")
 
+    # Prévisualisation LaTeX
     trigo_str = "" if trigo == "1" else f"\\{trigo}"
     angle_str = "" if trigo == "1" else f"({angle})"
     vec_str = "0" if vecteur == "0" else f"\\vec{{{vecteur}}}_{{{indice}}}"
@@ -149,7 +151,7 @@ elif st.session_state.step < 4:
         )
 
         if exact:
-            st.session_state.score += 5
+            st.session_state.score += 5  # 5 points par question = 20/20
 
         st.session_state.reponses_historique.append({
             "niveau": niveau_courant,
@@ -160,19 +162,23 @@ elif st.session_state.step < 4:
         st.session_state.step += 1
         st.rerun()
 
-# --- 3. BILAN ET ENREGISTREMENT ---
+# --- 3. BILAN ET ENREGISTREMENT EN FIN DE TEST ---
 else:
     note_finale = st.session_state.score
-    st.balloons() if note_finale >= 15 else None
+    if note_finale >= 15:
+        st.balloons()
 
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
 
+    # Résumé des résultats
     for idx, resp in enumerate(st.session_state.reponses_historique):
         symbole = "✅" if resp["exact"] else "❌"
         st.write(f"Question {idx+1} (Niveau {resp['niveau']}) : {symbole} Reponse : `{resp['reponse']}`")
 
+    # Synchronisation Google Sheets
     try:
-        df_existant = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)
+        df_existant = conn.read(ttl=0)
+        
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Nom": st.session_state.nom,
@@ -184,9 +190,10 @@ else:
             "Q3_NivC": st.session_state.reponses_historique[2]["reponse"],
             "Q4_NivD": st.session_state.reponses_historique[3]["reponse"],
         }
+        
         df_maj = pd.concat([df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
-        conn.update(spreadsheet=SPREADSHEET_URL, data=df_maj)
-        st.success(" Vos résultats ont été synchronisés avec Google Sheets.")
+        conn.update(data=df_maj)
+        st.success(" Vos résultats ont été enregistrés avec succès dans Google Sheets.")
     except Exception as e:
         st.error(f"Erreur d'enregistrement Google Sheets : {e}")
 
