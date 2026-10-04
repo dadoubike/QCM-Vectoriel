@@ -228,7 +228,7 @@ if not st.session_state.test_started:
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
 
-# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE DYNAMIQUE ---
+# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE ---
 elif st.session_state.step < 4:
 
     @st.fragment(run_every=1)
@@ -279,28 +279,21 @@ elif st.session_state.step < 4:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # --- CAS 1 : INTERFACE COMPACTE OPTION B (2 Colonnes & Radio Horizontaux) ---
+    # --- CAS 1 : INTERFACE COMPACTE OPTIMISÉE MOBILE & DESKTOP (Niveaux A & B) ---
     if q["type"] == "colonnes":
-        col_gauche, col_droite = st.columns(2)
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            signe = st.selectbox("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
+        with c2:
+            trigo = st.selectbox("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
+        with c3:
+            angle = st.selectbox("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
 
-        with col_gauche:
-            signe = st.radio(
-                "Signe", ["+", "-"], horizontal=True, key=f"signe_{st.session_state.step}"
-            )
-            trigo = st.radio(
-                "Trigo", ["1", "sin", "cos"], horizontal=True, key=f"trigo_{st.session_state.step}"
-            )
-            angle = st.radio(
-                "Angle", ["α", "θ", "β"], horizontal=True, key=f"angle_{st.session_state.step}"
-            )
-
-        with col_droite:
-            vecteur = st.radio(
-                "Vecteur", ["x", "y", "z", "0"], horizontal=True, key=f"vec_{st.session_state.step}"
-            )
-            indice = st.radio(
-                "Indice", ["0", "1", "2", "3"], horizontal=True, key=f"ind_{st.session_state.step}"
-            )
+        c4, c5 = st.columns(2)
+        with c4:
+            vecteur = st.selectbox("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
+        with c5:
+            indice = st.selectbox("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -410,7 +403,7 @@ else:
 
     try:
         df_existant = conn.read(ttl=0)
-        
+
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Temps_Passe": f"'{temps_passe_str}",
@@ -423,7 +416,7 @@ else:
             "Q3_NivC": q3_val,
             "Q4_NivD": q4_val,
         }
-        
+
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
         )
@@ -434,8 +427,13 @@ else:
         st.subheader("🏆 Classement Général (Top Score & Vitesse)")
 
         df_leaderboard = df_maj.copy()
-        df_leaderboard["Temps_Clean"] = df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
-        df_leaderboard["Note"] = pd.to_numeric(df_leaderboard["Note"], errors="coerce")
+
+        df_leaderboard["Temps_Clean"] = (
+            df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
+        )
+        df_leaderboard["Note"] = pd.to_numeric(
+            df_leaderboard["Note"], errors="coerce"
+        )
 
         df_leaderboard = df_leaderboard.sort_values(
             by=["Note", "Temps_Clean"], ascending=[False, True]
@@ -444,9 +442,9 @@ else:
         df_leaderboard.index = df_leaderboard.index + 1
         df_leaderboard.index.name = "Rang"
 
-        df_display = df_leaderboard[["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]].rename(
-            columns={"Temps_Clean": "Temps"}
-        )
+        df_display = df_leaderboard[
+            ["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]
+        ].rename(columns={"Temps_Clean": "Temps"})
 
         st.dataframe(df_display, use_container_width=True)
 
