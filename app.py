@@ -1,5 +1,6 @@
 import datetime
 import random
+import time
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -11,6 +12,9 @@ st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 QCM : Produits Vectoriels Progressifs")
+
+# Durée maximale du test (5 minutes = 300 secondes)
+DUREE_MAX_SECONDES = 300
 
 # Équivalences géométriques des axes (selon les figures de changement de base)
 EQUIVALENCES_VECTEURS = {
@@ -60,7 +64,6 @@ BANQUE_QUESTIONS = {
         },
     ],
     "B": [
-        # Cosinus de la première figure
         {
             "type": "colonnes",
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
@@ -109,7 +112,6 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-        # Fin de la première figure en cosinus
         {
             "type": "colonnes",
             "enonce": r"\vec{z}_2 \wedge \vec{y}_1",
@@ -122,7 +124,7 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Base 2 et 1",
         },
-    ],  # <-- Virgule fermante de la liste "B" ajoutée ici
+    ],
     "C": [
         {
             "type": "qcm",
@@ -182,7 +184,7 @@ BANQUE_QUESTIONS = {
             "description": "Niveau D (4/4) : Produit complexe (Fig 3 / Fig 1)",
         }
     ],
-}  # <-- Accolade fermante du dictionnaire BANQUE_QUESTIONS ajoutée ici
+}
 
 NIVEAUX = ["A", "B", "C", "D"]
 
@@ -210,6 +212,7 @@ if not st.session_state.test_started:
                 st.session_state.prenom = prenom
                 st.session_state.classe = classe
                 st.session_state.test_started = True
+                st.session_state.start_time = time.time()  # Départ du chrono
 
                 q_list = []
                 for niv in NIVEAUX:
@@ -223,8 +226,28 @@ if not st.session_state.test_started:
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
 
-# --- 2. EVALUATION PROGRESSIVE ---
+# --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE ---
 elif st.session_state.step < 4:
+
+    # Calcul du temps restant
+    temps_ecoule = time.time() - st.session_state.start_time
+    temps_restant = int(DUREE_MAX_SECONDES - temps_ecoule)
+
+    # Si le temps est écoulé, fin automatique du test
+    if temps_restant <= 0:
+        st.error("⏳ Temps écoulé ! Vos réponses enregistrées ont été soumises.")
+        st.session_state.step = 4
+        st.rerun()
+
+    # Affichage du temps restant (Minutes : Secondes)
+    minutes = temps_restant // 60
+    secondes = temps_restant % 60
+    color = "red" if temps_restant < 60 else "normal"
+    st.metric(
+        label="⏱️ Temps restant",
+        value=f"{minutes:02d}:{secondes:02d}",
+        delta_color=color,
+    )
 
     niveau_courant = NIVEAUX[st.session_state.step]
     q = st.session_state.questions_selectionnees[st.session_state.step]
@@ -297,7 +320,6 @@ elif st.session_state.step < 4:
             if exact:
                 st.session_state.score += 5
 
-            # Représentation propre pour le bilan LaTeX
             reponse_latex = (
                 f"{signe} \\{trigo}({angle}) \\vec{{{vecteur}}}_{{{indice}}}"
                 if trigo != "1"
@@ -356,6 +378,13 @@ else:
         st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
         st.latex(f"{resp['enonce']} = {resp['reponse_display']}")
 
+    # Compléter les réponses manquantes par "Non répondu" si le chrono s'est écoulé
+    q_ans = len(st.session_state.reponses_historique)
+    q1_val = st.session_state.reponses_historique[0]["reponse_sheet"] if q_ans > 0 else "'Non répondu"
+    q2_val = st.session_state.reponses_historique[1]["reponse_sheet"] if q_ans > 1 else "'Non répondu"
+    q3_val = st.session_state.reponses_historique[2]["reponse_sheet"] if q_ans > 2 else "'Non répondu"
+    q4_val = st.session_state.reponses_historique[3]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
+
     try:
         df_existant = conn.read(ttl=0)
         nouvelle_ligne = {
@@ -364,10 +393,10 @@ else:
             "Prenom": st.session_state.prenom,
             "Classe": st.session_state.classe,
             "Note": note_finale,
-            "Q1_NivA": st.session_state.reponses_historique[0]["reponse_sheet"],
-            "Q2_NivB": st.session_state.reponses_historique[1]["reponse_sheet"],
-            "Q3_NivC": st.session_state.reponses_historique[2]["reponse_sheet"],
-            "Q4_NivD": st.session_state.reponses_historique[3]["reponse_sheet"],
+            "Q1_NivA": q1_val,
+            "Q2_NivB": q2_val,
+            "Q3_NivC": q3_val,
+            "Q4_NivD": q4_val,
         }
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
