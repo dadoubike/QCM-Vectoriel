@@ -7,17 +7,17 @@ from streamlit_gsheets import GSheetsConnection
 
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-conn = st.connection(
-    "gsheets",
-    type=GSheetsConnection,
-    spreadsheet="https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZvUQ2rRflev8/edit",
-)
+# URL de votre feuille Google Sheet
+SPREADSHEET_URL = "https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZvUQ2rRflev8/edit"
+
+# Initialisation standard de la connexion
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 QCM : Produits Vectoriels Progressifs")
 
 # --- BANQUE DE QUESTIONS PAR NIVEAU ---
 BANQUE_QUESTIONS = {
-    "A": [  # Niveau A : Débutant (même base / figure direct)
+    "A": [  # Niveau A : Débutant
         {
             "enonce": r"\vec{x}_0 \wedge \vec{x}_1",
             "solution": {"signe": "+", "vecteur": "z", "indice": "0", "trigo": "sin", "angle": "α"},
@@ -29,7 +29,7 @@ BANQUE_QUESTIONS = {
             "description": "Niveau A (1/4) : Base 1 et 2"
         }
     ],
-    "B": [  # Niveau B : Moyen (Projections simples / cosinus)
+    "B": [  # Niveau B : Moyen
         {
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
             "solution": {"signe": "+", "vecteur": "z", "indice": "0", "trigo": "cos", "angle": "α"},
@@ -41,7 +41,7 @@ BANQUE_QUESTIONS = {
             "description": "Niveau B (2/4) : Figure 2 vers 1"
         }
     ],
-    "C": [  # Niveau C : Intrépide (Entre 2 figures différentes)
+    "C": [  # Niveau C : Intrépide
         {
             "enonce": r"\vec{z}_2 \wedge \vec{x}_1",
             "solution": {"signe": "+", "vecteur": "y", "indice": "1", "trigo": "sin", "angle": "θ"},
@@ -53,7 +53,7 @@ BANQUE_QUESTIONS = {
             "description": "Niveau C (3/4) : Fig 3 vers Fig 1"
         }
     ],
-    "D": [  # Niveau D : Expert (Entre 3 figures / compositions)
+    "D": [  # Niveau D : Expert
         {
             "enonce": r"\vec{y}_3 \wedge \vec{x}_1",
             "solution": {"signe": "+", "vecteur": "z", "indice": "2", "trigo": "cos", "angle": "β"},
@@ -72,7 +72,7 @@ NIVEAUX = ["A", "B", "C", "D"]
 # --- 1. IDENTIFICATION ---
 if "test_started" not in st.session_state:
     st.session_state.test_started = False
-    st.session_state.step = 0  # Index du niveau actuel (0, 1, 2, 3)
+    st.session_state.step = 0
     st.session_state.score = 0
     st.session_state.reponses_historique = []
 
@@ -94,7 +94,6 @@ if not st.session_state.test_started:
                 st.session_state.groupe = groupe
                 st.session_state.test_started = True
                 
-                # Tirage au sort de 1 question par niveau pour cet étudiant
                 st.session_state.questions_selectionnees = [
                     random.choice(BANQUE_QUESTIONS[niv]) for niv in NIVEAUX
                 ]
@@ -109,17 +108,15 @@ elif st.session_state.step < 4:
     st.caption(f"Étudiant : **{st.session_state.nom} {st.session_state.prenom}** ({st.session_state.groupe})")
     st.progress((st.session_state.step) / 4, text=f"Question {st.session_state.step + 1} / 4 — Niveau {niveau_courant}")
 
-    # Image de référence en haut de chaque question
     try:
         st.image("3Figs_geom.png", use_container_width=True)
     except Exception:
-        st.warning("Image '3Figs_geom.png' non trouvée. Pensez à l'ajouter sur GitHub.")
+        st.warning("Image '3Figs_geom.png' non trouvée dans le dépôt GitHub.")
 
     st.markdown("---")
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # Colonnes de saisie
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         signe = st.radio("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
@@ -132,7 +129,6 @@ elif st.session_state.step < 4:
     with c5:
         angle = st.radio("Angle", ["α", "β", "θ", "γ"], key=f"angle_{st.session_state.step}")
 
-    # Aperçu LaTeX
     trigo_str = "" if trigo == "1" else f"\\{trigo}"
     angle_str = "" if trigo == "1" else f"({angle})"
     vec_str = "0" if vecteur == "0" else f"\\vec{{{vecteur}}}_{{{indice}}}"
@@ -153,7 +149,7 @@ elif st.session_state.step < 4:
         )
 
         if exact:
-            st.session_state.score += 5  # 5 points par question = 20/20 max
+            st.session_state.score += 5
 
         st.session_state.reponses_historique.append({
             "niveau": niveau_courant,
@@ -164,21 +160,19 @@ elif st.session_state.step < 4:
         st.session_state.step += 1
         st.rerun()
 
-# --- 3. BILAN ET ENREGISTREMENT EN FIN DE TEST ---
+# --- 3. BILAN ET ENREGISTREMENT ---
 else:
     note_finale = st.session_state.score
     st.balloons() if note_finale >= 15 else None
 
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
 
-    # Affichage du détail
     for idx, resp in enumerate(st.session_state.reponses_historique):
         symbole = "✅" if resp["exact"] else "❌"
         st.write(f"Question {idx+1} (Niveau {resp['niveau']}) : {symbole} Reponse : `{resp['reponse']}`")
 
-    # Enregistrement dans Google Sheets
     try:
-        df_existant = conn.read(ttl=0)
+        df_existant = conn.read(spreadsheet=SPREADSHEET_URL, ttl=0)
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Nom": st.session_state.nom,
@@ -191,7 +185,7 @@ else:
             "Q4_NivD": st.session_state.reponses_historique[3]["reponse"],
         }
         df_maj = pd.concat([df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
-        conn.update(data=df_maj)
+        conn.update(spreadsheet=SPREADSHEET_URL, data=df_maj)
         st.success(" Vos résultats ont été synchronisés avec Google Sheets.")
     except Exception as e:
         st.error(f"Erreur d'enregistrement Google Sheets : {e}")
