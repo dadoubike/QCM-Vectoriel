@@ -60,6 +60,8 @@ BANQUE_QUESTIONS = {
         },
     ],
     "B": [
+        
+# Cosinus de la premiere figure        
         {
             "type": "colonnes",
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
@@ -72,19 +74,61 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-        {
+    {
+        "type": "colonnes",
+        "enonce": r"\vec{x}_0 \wedge \vec{y}_1",
+        "solution": {
+            "signe": "+",
+            "trigo": "cos",
+            "angle": "α",
+            "vecteur": "z",
+            "indice": "0",
+        },
+        "description": "Niveau B (2/4) : Figure 0 et 1",
+    },
+    
+
+    
+    {
+        "type": "colonnes",
+        "enonce": r"\vec{y}_0 \wedge \vec{x}_1",
+        "solution": {
+            "signe": "-",
+            "trigo": "cos",
+            "angle": "α",
+            "vecteur": "z",
+            "indice": "0",
+        },
+        "description": "Niveau B (2/4) : Figure 0 et 1",
+    },
+{
+    "type": "colonnes",
+    "enonce": r"\vec{y}_1 \wedge \vec{x}_0",
+    "solution": {
+        "signe": "+",
+        "trigo": "cos",
+        "angle": "α",
+        "vecteur": "z",
+        "indice": "0",
+    },
+    "description": "Niveau B (2/4) : Figure 0 et 1",
+},
+
+# Fin de la premiere figure en cosinus
+    
+     {
             "type": "colonnes",
             "enonce": r"\vec{z}_2 \wedge \vec{y}_1",
             "solution": {
                 "signe": "-",
-                "trigo": "sin",
-                "angle": "θ",
+                "trigo": "1",
+                "angle": "θ",  # L'angle sera ignoré par le code car trigo = "1"
                 "vecteur": "x",
-                "indice": "1",
+                "indice": "2",  # Le code acceptera aussi l'indice "3" grâce à EQUIVALENCES_VECTEURS
             },
-            "description": "Niveau B (2/4) : Figure 2 vers 1",
+            "description": "Niveau B (2/4) : Base 2 et 1",
         },
-    ],
+     
     "C": [
         {
             "type": "qcm",
@@ -105,16 +149,15 @@ BANQUE_QUESTIONS = {
             "type": "qcm",
             "enonce": r"\vec{y}_3 \wedge \vec{z}_1",
             "propositions": [
-                r"+\cos(\beta)\vec{x}_2",
-                r"+\cos(\beta)\vec{x}_3",
-                r"-\cos(\beta)\vec{x}_2",
-                r"+\sin(\beta)\vec{x}_2",
+                r"+\cos(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"+\cos(\beta)\vec{x}_1 + \sin(\beta)\cos(\theta)\vec{y}_1",
+                r"-\cos(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"+\sin(\beta)\vec{x}_1",
             ],
             "correct_expressions": [
-                r"+\cos(\beta)\vec{x}_2",
-                r"+\cos(\beta)\vec{x}_3",
+                r"+\cos(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1"
             ],
-            "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
+            "description": "Niveau D (4/4) : Fig 3 vers Fig 1",
         },
     ],
     "D": [
