@@ -9,6 +9,29 @@ from streamlit_gsheets import GSheetsConnection
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
+# CSS pour forcer le maintien en 2 colonnes sur smartphone
+st.markdown(
+    """
+    <style>
+    /* Forcer les colonnes Streamlit à rester côte à côte sur smartphone */
+    div[data-testid="column"] {
+        width: 48% !important;
+        flex: 1 1 48% !important;
+        min-width: 48% !important;
+    }
+    /* Compacter l'affichage des boutons radio */
+    div[data-testid="stRadio"] > label {
+        font-size: 0.85rem !important;
+        font-weight: bold !important;
+    }
+    div[data-testid="stRadio"] > div {
+        gap: 0.4rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 st.title("📐 QCM : Produits Vectoriels Progressifs")
@@ -247,7 +270,7 @@ elif st.session_state.step < 4:
         color = "red" if temps_restant < 60 else "normal"
 
         st.metric(
-            label="⏱️ Temps restant",
+            label="⏱️️ Temps restant",
             value=f"{minutes:02d}:{secondes:02d}",
             delta_color=color,
         )
@@ -279,21 +302,43 @@ elif st.session_state.step < 4:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # --- CAS 1 : INTERFACE COMPACTE OPTIMISÉE MOBILE & DESKTOP (Niveaux A & B) ---
+    # --- CAS 1 : INTERFACE 2 COLONNES FORCEES (Niveaux A & B) ---
     if q["type"] == "colonnes":
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            signe = st.selectbox("Signe", ["+", "-"], key=f"signe_{st.session_state.step}")
-        with c2:
-            trigo = st.selectbox("Trigo", ["1", "sin", "cos"], key=f"trigo_{st.session_state.step}")
-        with c3:
-            angle = st.selectbox("Angle", ["α", "θ", "β"], key=f"angle_{st.session_state.step}")
+        col_gauche, col_droite = st.columns(2)
 
-        c4, c5 = st.columns(2)
-        with c4:
-            vecteur = st.selectbox("Vecteur", ["x", "y", "z", "0"], key=f"vec_{st.session_state.step}")
-        with c5:
-            indice = st.selectbox("Indice", ["0", "1", "2", "3"], key=f"ind_{st.session_state.step}")
+        with col_gauche:
+            signe = st.radio(
+                "Signe",
+                ["+", "-"],
+                horizontal=True,
+                key=f"signe_{st.session_state.step}",
+            )
+            trigo = st.radio(
+                "Trigo",
+                ["1", "sin", "cos"],
+                horizontal=True,
+                key=f"trigo_{st.session_state.step}",
+            )
+            angle = st.radio(
+                "Angle",
+                ["α", "θ", "β"],
+                horizontal=True,
+                key=f"angle_{st.session_state.step}",
+            )
+
+        with col_droite:
+            vecteur = st.radio(
+                "Vecteur",
+                ["x", "y", "z", "0"],
+                horizontal=True,
+                key=f"vec_{st.session_state.step}",
+            )
+            indice = st.radio(
+                "Indice",
+                ["0", "1", "2", "3"],
+                horizontal=True,
+                key=f"ind_{st.session_state.step}",
+            )
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
