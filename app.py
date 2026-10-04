@@ -155,7 +155,7 @@ elif st.session_state.step < 4:
 
         st.session_state.reponses_historique.append({
             "niveau": niveau_courant,
-            "reponse": f"{signe} {vecteur}_{indice} {trigo}({angle})",
+            "reponse": f"'{signe} {vecteur}_{indice} {trigo}({angle})", # L'apostrophe empêche l'interprétation en formule
             "exact": exact
         })
 
