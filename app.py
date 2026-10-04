@@ -31,7 +31,7 @@ def verifier_vecteur_egal(vec_user, ind_user, vec_sol, ind_sol):
     return (vec_user, ind_user) in equivalents
 
 
-# --- BANQUE DE QUESTIONS CORRIGÉE ---
+# --- BANQUE DE QUESTIONS ---
 BANQUE_QUESTIONS = {
     "A": [
         {
@@ -91,11 +91,14 @@ BANQUE_QUESTIONS = {
             "enonce": r"\vec{z}_2 \wedge \vec{x}_1",
             "propositions": [
                 r"+\cos(\theta)\vec{y}_1",
+                r"+\cos(\theta)\vec{y}_2",
                 r"-\cos(\theta)\vec{y}_1",
                 r"+\sin(\theta)\vec{y}_1",
-                r"+\cos(\theta)\vec{x}_1",
             ],
-            "solution_idx": 0,
+            "correct_expressions": [
+                r"+\cos(\theta)\vec{y}_1",
+                r"+\cos(\theta)\vec{y}_2",
+            ],
             "description": "Niveau C (3/4) : Fig 2 vers Fig 1",
         },
         {
@@ -103,11 +106,14 @@ BANQUE_QUESTIONS = {
             "enonce": r"\vec{y}_3 \wedge \vec{z}_1",
             "propositions": [
                 r"+\cos(\beta)\vec{x}_2",
+                r"+\cos(\beta)\vec{x}_3",
                 r"-\cos(\beta)\vec{x}_2",
                 r"+\sin(\beta)\vec{x}_2",
-                r"-\sin(\beta)\vec{y}_2",
             ],
-            "solution_idx": 0,
+            "correct_expressions": [
+                r"+\cos(\beta)\vec{x}_2",
+                r"+\cos(\beta)\vec{x}_3",
+            ],
             "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
         },
     ],
@@ -130,7 +136,12 @@ BANQUE_QUESTIONS = {
                 ),
                 r"+\sin(\beta)\vec{y}_1",
             ],
-            "solution_idx": 0,
+            "correct_expressions": [
+                (
+                    r"-\cos(\beta)\vec{z}_1 +"
+                    r" \sin(\beta)\cos(\theta)\vec{y}_1"
+                )
+            ],
             "description": "Niveau D (4/4) : Produit complexe (Fig 3 / Fig 1)",
         }
     ],
@@ -168,10 +179,8 @@ if not st.session_state.test_started:
                     q_copy = dict(random.choice(BANQUE_QUESTIONS[niv]))
                     if q_copy["type"] == "qcm":
                         props = list(q_copy["propositions"])
-                        sol_text = props[q_copy["solution_idx"]]
                         random.shuffle(props)
                         q_copy["propositions_shuffled"] = props
-                        q_copy["correct_text"] = sol_text
                     q_list.append(q_copy)
 
                 st.session_state.questions_selectionnees = q_list
@@ -201,7 +210,7 @@ elif st.session_state.step < 4:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    # --- CAS 1 : INTERFACE 5 COLONNES (Ordre : Signe | Trigo | Angle | Vecteur | Indice) ---
+    # --- CAS 1 : INTERFACE 5 COLONNES (Niveaux A & B) ---
     if q["type"] == "colonnes":
         c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
@@ -251,13 +260,20 @@ elif st.session_state.step < 4:
             if exact:
                 st.session_state.score += 5
 
+            # Représentation propre pour le bilan LaTeX
+            reponse_latex = (
+                f"{signe} \\{trigo}({angle}) \\vec{{{vecteur}}}_{{{indice}}}"
+                if trigo != "1"
+                else f"{signe} \\vec{{{vecteur}}}_{{{indice}}}"
+            )
+
             st.session_state.reponses_historique.append({
                 "niveau": niveau_courant,
-                "reponse": (
-                    f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
-                    if trigo != "1"
-                    else f"'{signe} {vecteur}_{indice}"
-                ),
+                "enonce": q["enonce"],
+                "reponse_display": reponse_latex,
+                "reponse_sheet": f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
+                if trigo != "1"
+                else f"'{signe} {vecteur}_{indice}",
                 "exact": exact,
             })
             st.session_state.step += 1
@@ -273,13 +289,17 @@ elif st.session_state.step < 4:
         )
 
         if st.button("Valider cette question ➔", type="primary"):
-            exact = choix_select == q["correct_text"]
+            exact = choix_select in q["correct_expressions"]
             if exact:
                 st.session_state.score += 5
 
-            st.session_state.reponses_historique.append(
-                {"niveau": niveau_courant, "reponse": f"'{choix_select}", "exact": exact}
-            )
+            st.session_state.reponses_historique.append({
+                "niveau": niveau_courant,
+                "enonce": q["enonce"],
+                "reponse_display": choix_select,
+                "reponse_sheet": f"'{choix_select}",
+                "exact": exact,
+            })
             st.session_state.step += 1
             st.rerun()
 
@@ -290,13 +310,12 @@ else:
         st.balloons()
 
     st.subheader(f"Test terminé ! Votre note : {note_finale} / 20")
+    st.markdown("---")
 
     for idx, resp in enumerate(st.session_state.reponses_historique):
         symbole = "✅" if resp["exact"] else "❌"
-        st.write(
-            f"Question {idx+1} (Niveau {resp['niveau']}) : {symbole} Reponse :"
-            f" `{resp['reponse']}`"
-        )
+        st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
+        st.latex(f"{resp['enonce']} = {resp['reponse_display']}")
 
     try:
         df_existant = conn.read(ttl=0)
@@ -306,10 +325,10 @@ else:
             "Prenom": st.session_state.prenom,
             "Classe": st.session_state.classe,
             "Note": note_finale,
-            "Q1_NivA": st.session_state.reponses_historique[0]["reponse"],
-            "Q2_NivB": st.session_state.reponses_historique[1]["reponse"],
-            "Q3_NivC": st.session_state.reponses_historique[2]["reponse"],
-            "Q4_NivD": st.session_state.reponses_historique[3]["reponse"],
+            "Q1_NivA": st.session_state.reponses_historique[0]["reponse_sheet"],
+            "Q2_NivB": st.session_state.reponses_historique[1]["reponse_sheet"],
+            "Q3_NivC": st.session_state.reponses_historique[2]["reponse_sheet"],
+            "Q4_NivD": st.session_state.reponses_historique[3]["reponse_sheet"],
         }
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
