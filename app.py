@@ -60,8 +60,7 @@ BANQUE_QUESTIONS = {
         },
     ],
     "B": [
-        
-# Cosinus de la premiere figure        
+        # Cosinus de la première figure
         {
             "type": "colonnes",
             "enonce": r"\vec{x}_1 \wedge \vec{y}_0",
@@ -74,61 +73,56 @@ BANQUE_QUESTIONS = {
             },
             "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-    {
-        "type": "colonnes",
-        "enonce": r"\vec{x}_0 \wedge \vec{y}_1",
-        "solution": {
-            "signe": "+",
-            "trigo": "cos",
-            "angle": "α",
-            "vecteur": "z",
-            "indice": "0",
+        {
+            "type": "colonnes",
+            "enonce": r"\vec{x}_0 \wedge \vec{y}_1",
+            "solution": {
+                "signe": "+",
+                "trigo": "cos",
+                "angle": "α",
+                "vecteur": "z",
+                "indice": "0",
+            },
+            "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-        "description": "Niveau B (2/4) : Figure 0 et 1",
-    },
-    
-
-    
-    {
-        "type": "colonnes",
-        "enonce": r"\vec{y}_0 \wedge \vec{x}_1",
-        "solution": {
-            "signe": "-",
-            "trigo": "cos",
-            "angle": "α",
-            "vecteur": "z",
-            "indice": "0",
+        {
+            "type": "colonnes",
+            "enonce": r"\vec{y}_0 \wedge \vec{x}_1",
+            "solution": {
+                "signe": "-",
+                "trigo": "cos",
+                "angle": "α",
+                "vecteur": "z",
+                "indice": "0",
+            },
+            "description": "Niveau B (2/4) : Figure 0 et 1",
         },
-        "description": "Niveau B (2/4) : Figure 0 et 1",
-    },
-{
-    "type": "colonnes",
-    "enonce": r"\vec{y}_1 \wedge \vec{x}_0",
-    "solution": {
-        "signe": "+",
-        "trigo": "cos",
-        "angle": "α",
-        "vecteur": "z",
-        "indice": "0",
-    },
-    "description": "Niveau B (2/4) : Figure 0 et 1",
-},
-
-# Fin de la premiere figure en cosinus
-    
-     {
+        {
+            "type": "colonnes",
+            "enonce": r"\vec{y}_1 \wedge \vec{x}_0",
+            "solution": {
+                "signe": "+",
+                "trigo": "cos",
+                "angle": "α",
+                "vecteur": "z",
+                "indice": "0",
+            },
+            "description": "Niveau B (2/4) : Figure 0 et 1",
+        },
+        # Fin de la première figure en cosinus
+        {
             "type": "colonnes",
             "enonce": r"\vec{z}_2 \wedge \vec{y}_1",
             "solution": {
                 "signe": "-",
                 "trigo": "1",
-                "angle": "θ",  # L'angle sera ignoré par le code car trigo = "1"
+                "angle": "θ",
                 "vecteur": "x",
-                "indice": "2",  # Le code acceptera aussi l'indice "3" grâce à EQUIVALENCES_VECTEURS
+                "indice": "2",
             },
             "description": "Niveau B (2/4) : Base 2 et 1",
         },
-     
+    ],  # <-- Virgule fermante de la liste "B" ajoutée ici
     "C": [
         {
             "type": "qcm",
@@ -157,7 +151,7 @@ BANQUE_QUESTIONS = {
             "correct_expressions": [
                 r"+\cos(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1"
             ],
-            "description": "Niveau D (4/4) : Fig 3 vers Fig 1",
+            "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
         },
     ],
     "D": [
@@ -188,7 +182,7 @@ BANQUE_QUESTIONS = {
             "description": "Niveau D (4/4) : Produit complexe (Fig 3 / Fig 1)",
         }
     ],
-}
+}  # <-- Accolade fermante du dictionnaire BANQUE_QUESTIONS ajoutée ici
 
 NIVEAUX = ["A", "B", "C", "D"]
 
@@ -314,9 +308,11 @@ elif st.session_state.step < 4:
                 "niveau": niveau_courant,
                 "enonce": q["enonce"],
                 "reponse_display": reponse_latex,
-                "reponse_sheet": f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
-                if trigo != "1"
-                else f"'{signe} {vecteur}_{indice}",
+                "reponse_sheet": (
+                    f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
+                    if trigo != "1"
+                    else f"'{signe} {vecteur}_{indice}"
+                ),
                 "exact": exact,
             })
             st.session_state.step += 1
