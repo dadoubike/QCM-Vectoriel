@@ -231,7 +231,6 @@ if not st.session_state.test_started:
 # --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE EN ARRIÈRE-PLAN ---
 elif st.session_state.step < 4:
 
-    # Le paramètre run_every=1 gère la mise à jour automatique chaque seconde
     @st.fragment(run_every=1)
     def afficher_chronometre():
         temps_ecoule = time.time() - st.session_state.start_time
@@ -368,7 +367,7 @@ elif st.session_state.step < 4:
                 st.session_state.end_time = time.time()
             st.rerun()
 
-# --- 3. BILAN ET SYNCHRONISATION ---
+# --- 3. BILAN, SYNCHRONISATION ET CLASSEMENT ---
 else:
     note_finale = st.session_state.score
     if note_finale >= 15:
@@ -387,19 +386,24 @@ else:
     st.info(f"⏱ Temps réalisé : **{temps_passe_str}**")
     st.markdown("---")
 
+    # Affichage des corrections
     for idx, resp in enumerate(st.session_state.reponses_historique):
         symbole = "✅" if resp["exact"] else "❌"
         st.write(f"**Question {idx+1} (Niveau {resp['niveau']}) : {symbole}**")
         st.latex(f"{resp['enonce']} = {resp['reponse_display']}")
 
+    st.markdown("---")
+
     q_ans = len(st.session_state.reponses_historique)
     q1_val = st.session_state.reponses_historique[0]["reponse_sheet"] if q_ans > 0 else "'Non répondu"
     q2_val = st.session_state.reponses_historique[1]["reponse_sheet"] if q_ans > 1 else "'Non répondu"
-    q3_val = st.session_state.reponses_historique[2]["reponse_sheet"] if q_ans > 2 else "'Non répondu"
+    q3_val = st.session_state.reponses_historique[2]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
     q4_val = st.session_state.reponses_historique[3]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
 
+    # Enregistrement + Affichage du classement
     try:
         df_existant = conn.read(ttl=0)
+        
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "Temps_Passe": f"'{temps_passe_str}",
@@ -412,12 +416,40 @@ else:
             "Q3_NivC": q3_val,
             "Q4_NivD": q4_val,
         }
+        
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
         )
         conn.update(data=df_maj)
         st.success(" Vos résultats ont été enregistrés dans Google Sheets.")
+
+        # --- GENERATION DU CLASSEMENT (LEADERBOARD) ---
+        st.subheader("🏆 Classement Général (Top Score & Vitesse)")
+
+        # Nettoyage et formatage du DataFrame pour le tri
+        df_leaderboard = df_maj.copy()
+        
+        # Nettoyage de la colonne Temps_Passe pour le tri
+        df_leaderboard["Temps_Clean"] = df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
+        df_leaderboard["Note"] = pd.to_numeric(df_leaderboard["Note"], errors="coerce")
+
+        # Tri : Note décroissante, puis Temps croissant
+        df_leaderboard = df_leaderboard.sort_values(
+            by=["Note", "Temps_Clean"], ascending=[False, True]
+        ).reset_index(drop=True)
+
+        # Ajout du rang (1, 2, 3...)
+        df_leaderboard.index = df_leaderboard.index + 1
+        df_leaderboard.index.name = "Rang"
+
+        # Sélection des colonnes à afficher
+        df_display = df_leaderboard[["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]].rename(
+            columns={"Temps_Clean": "Temps"}
+        )
+
+        st.dataframe(df_display, use_container_width=True)
+
     except Exception as e:
-        st.error(f"Erreur Google Sheets : {e}")
+        st.error(f"Erreur lors du calcul du classement / Google Sheets : {e}")
 
     st.info("Vous pouvez fermer cette fenêtre.")
