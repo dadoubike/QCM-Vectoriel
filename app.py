@@ -394,7 +394,7 @@ BANQUE_QUESTIONS = {
   },
     ],
     "C": [
-   
+        # --- 1. Produits entre Fig 3 et Fig 1 ---
         {
             "type": "qcm",
             "enonce": r"\vec{y}_3 \wedge \vec{z}_1",
@@ -409,7 +409,6 @@ BANQUE_QUESTIONS = {
             ],
             "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
         },
-        
         {
             "type": "qcm",
             "enonce": r"\vec{z}_3 \wedge \vec{z}_1",
@@ -424,97 +423,93 @@ BANQUE_QUESTIONS = {
             ],
             "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
         },
-       {
-           "type": "qcm",
-           "enonce": r"\vec{z}_1 \wedge \vec{y}_3",
-           "propositions": [
-               r"-\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"-\cos(\beta)\vec{x}_1 - \sin(\beta)\cos(\theta)\vec{y}_1",
-               r"+\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"-\sin(\beta)\vec{x}_1",
-           ],
-           "correct_expressions": [
-               r"-\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1"
-           ],
-           "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
-       },
-       
-       {
-           "type": "qcm",
-           "enonce": r"\vec{z}_1 \wedge \vec{z}_3",
-           "propositions": [
-               r"-\sin(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"+\sin(\beta)\vec{x}_1 + \sin(\theta)\cos(\beta)\vec{y}_1",
-               r"+\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"-\sin(\beta)\vec{x}_1",
-           ],
-           "correct_expressions": [
-               r"+\sin(\beta)\vec{x}_1 + \sin(\theta)\cos(\beta)\vec{y}_1"
-           ],
-           "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
-       },
-       
-       # avec x1
-       {
-           "type": "qcm",
-           "enonce": r"\vec{y}_3 \wedge \vec{x}_1",
-           "propositions": [
-               r"+\cos(\beta)\vec{z}_1 + \sin(\beta)\cos(\theta)\vec{y}_1",
-               r"+\cos(\beta)\vec{y}_1 - \sin(\beta)\cos(\theta)\vec{y}_2",
-               r"-\cos(\beta)\vec{z}_1 - \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"-\cos(\beta)\vec{z}_1",
-           ],
-           "correct_expressions": [
-               r"+\cos(\beta)\vec{z}_1 + \sin(\beta)\cos(\theta)\vec{y}_1"
-           ],
-           "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
-       },
-       
-       {
-           "type": "qcm",
-           "enonce": r"\vec{z}_3 \wedge \vec{x}_1",
-           "propositions": [
-               r"+\sin(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1",
-               r"+\cos(\theta)\cos(\beta)\vec{y}_1+\sin(\beta)\vec{z}_1",
-               r"-\cos(\beta)\cos(\theta)\vec{y}_2-\cos(\beta)\vec{z}_2",
-               r"+\cos(\beta)\vec{x}_2",
-           ],
-           "correct_expressions": [
-               r"+\cos(\theta)\cos(\beta)\vec{y}_1+\sin(\beta)\vec{z}_1"
-           ],
-           "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
-       },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{z}_1 \wedge \vec{y}_3",
+            "propositions": [
+                r"-\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"-\cos(\beta)\vec{x}_1 - \sin(\beta)\cos(\theta)\vec{y}_1",
+                r"+\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"-\sin(\beta)\vec{x}_1",
+            ],
+            "correct_expressions": [
+                r"-\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
+        },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{z}_1 \wedge \vec{z}_3",
+            "propositions": [
+                r"-\sin(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"+\sin(\beta)\vec{x}_1 + \sin(\theta)\cos(\beta)\vec{y}_1",
+                r"+\cos(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"-\sin(\beta)\vec{x}_1",
+            ],
+            "correct_expressions": [
+                r"+\sin(\beta)\vec{x}_1 + \sin(\theta)\cos(\beta)\vec{y}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
+        },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{y}_3 \wedge \vec{x}_1",
+            "propositions": [
+                r"+\sin(\beta)\cos(\theta)\vec{y}_1 - \cos(\beta)\vec{z}_1",
+                r"-\sin(\beta)\sin(\theta)\vec{x}_1 + \cos(\beta)\vec{z}_1",
+                r"+\cos(\beta)\cos(\theta)\vec{y}_1 - \sin(\beta)\vec{z}_1",
+                r"+\sin(\beta)\vec{y}_1",
+            ],
+            "correct_expressions": [
+                r"+\sin(\beta)\cos(\theta)\vec{y}_1 - \cos(\beta)\vec{z}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
+        },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{z}_3 \wedge \vec{x}_1",
+            "propositions": [
+                r"+\sin(\beta)\vec{x}_1 - \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"+\cos(\theta)\cos(\beta)\vec{y}_1 + \sin(\beta)\vec{z}_1",
+                r"-\cos(\beta)\cos(\theta)\vec{y}_2 - \cos(\beta)\vec{z}_2",
+                r"+\cos(\beta)\vec{x}_2",
+            ],
+            "correct_expressions": [
+                r"+\cos(\theta)\cos(\beta)\vec{y}_1 + \sin(\beta)\vec{z}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 3 vers Fig 1",
+        },
       {
-          "type": "qcm",
-          "enonce": r"\vec{x}_1 \wedge \vec{y}_3",
-          "propositions": [
-              r"-\cos(\beta)\vec{z}_1 - \sin(\beta)\cos(\theta)\vec{y}_1",
-              r"-\cos(\beta)\vec{y}_1 + \sin(\beta)\cos(\theta)\vec{y}_2",
-              r"+\cos(\beta)\vec{z}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-              r"+\cos(\beta)\vec{z}_1",
-          ],
-          "correct_expressions": [
-              r"-\cos(\beta)\vec{z}_1 - \sin(\beta)\cos(\theta)\vec{y}_1"
-          ],
-          "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
-      },
-      
-      {
-          "type": "qcm",
-          "enonce": r"\vec{x}_1 \wedge \vec{z}_3",
-          "propositions": [
-              r"-\sin(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
-              r"-\cos(\theta)\cos(\beta)\vec{y}_1-\sin(\beta)\vec{z}_1",
-              r"+\cos(\beta)\cos(\theta)\vec{y}_2+\cos(\beta)\vec{z}_2",
-              r"-\cos(\beta)\vec{x}_2",
-          ],
-          "correct_expressions": [
-              r"-\cos(\theta)\cos(\beta)\vec{y}_1-\sin(\beta)\vec{z}_1"
-          ],
-          "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
-      },
-# --- PRODUITS ENTRE BASE 2 ET BASE 0 (z2, x2) ^ (x0, y0) ---
-           {
+            "type": "qcm",
+            "enonce": r"\vec{x}_1 \wedge \vec{y}_3",
+            "propositions": [
+                r"-\sin(\beta)\cos(\theta)\vec{y}_1 + \cos(\beta)\vec{z}_1",
+                r"-\cos(\beta)\vec{y}_1 + \sin(\beta)\cos(\theta)\vec{y}_2",
+                r"+\sin(\beta)\sin(\theta)\vec{y}_1 + \cos(\beta)\vec{z}_1",
+                r"+\cos(\beta)\vec{z}_1",
+            ],
+            "correct_expressions": [
+                r"-\sin(\beta)\cos(\theta)\vec{y}_1 + \cos(\beta)\vec{z}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
+        },
+        {
+            "type": "qcm",
+            "enonce": r"\vec{x}_1 \wedge \vec{z}_3",
+            "propositions": [
+                r"-\sin(\beta)\vec{x}_1 + \sin(\beta)\sin(\theta)\vec{y}_1",
+                r"-\cos(\theta)\cos(\beta)\vec{y}_1 - \sin(\beta)\vec{z}_1",
+                r"+\cos(\beta)\cos(\theta)\vec{y}_2 + \cos(\beta)\vec{z}_2",
+                r"-\cos(\beta)\vec{x}_2",
+            ],
+            "correct_expressions": [
+                r"-\cos(\theta)\cos(\beta)\vec{y}_1 - \sin(\beta)\vec{z}_1"
+            ],
+            "description": "Niveau C (3/4) : Fig 1 vers Fig 3",
+        },
+
+        # --- 2. Produits entre Base 2 et Base 0 ---
+        {
             "type": "qcm",
             "enonce": r"\vec{z}_2 \wedge \vec{x}_0",
             "propositions": [
@@ -574,18 +569,17 @@ BANQUE_QUESTIONS = {
             ],
             "description": "Niveau C (3/4) : Fig 0 vers Fig 2",
         },
-        ##
-        {
+       {
             "type": "qcm",
             "enonce": r"\vec{x}_2 \wedge \vec{x}_0",
             "propositions": [
-                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
                 r"-\sin(\theta)\vec{y}_0 - \cos(\theta)\sin(\alpha)\vec{z}_0",
                 r"+\sin(\theta)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
-                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
             ],
             "correct_expressions": [
-                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 - \sin(\theta)\cos(\alpha)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
                 r"-\sin(\theta)\vec{y}_0 - \cos(\theta)\sin(\alpha)\vec{z}_0",
             ],
             "description": "Niveau C (3/4) : Fig 2 vers Fig 0",
@@ -594,20 +588,18 @@ BANQUE_QUESTIONS = {
             "type": "qcm",
             "enonce": r"\vec{x}_0 \wedge \vec{x}_2",
             "propositions": [
-                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
                 r"+\sin(\theta)\vec{y}_0 + \cos(\theta)\sin(\alpha)\vec{z}_0",
                 r"-\sin(\theta)\vec{y}_1 - \cos(\theta)\sin(\alpha)\vec{z}_1",
-                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
             ],
             "correct_expressions": [
-                r"-\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
                 r"+\sin(\theta)\vec{y}_0 + \cos(\theta)\sin(\alpha)\vec{z}_0",
             ],
             "description": "Niveau C (3/4) : Fig 0 vers Fig 2",
         },
-        ##
-        
-       {
+        {
             "type": "qcm",
             "enonce": r"\vec{x}_2 \wedge \vec{y}_0",
             "propositions": [
@@ -637,8 +629,6 @@ BANQUE_QUESTIONS = {
             ],
             "description": "Niveau C (3/4) : Fig 0 vers Fig 2",
         },
-     
-        
     ],
     "D": [
         # --- 1. y3 ^ x1 et son opposé x1 ^ y3 ---
