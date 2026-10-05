@@ -876,6 +876,14 @@ BANQUE_QUESTIONS = {
 
 NIVEAUX = ["A", "B", "C", "D"]
 
+# --- BARÈME PROGRESSIF SUR 20 POINTS ---
+BAREME = {
+    "A": 2,  # Question niveau A = 2 points
+    "B": 4,  # Question niveau B = 4 points
+    "C": 6,  # Question niveau C = 6 points
+    "D": 8   # Question niveau D = 8 points
+}
+
 # --- 1. IDENTIFICATION ---
 if "test_started" not in st.session_state:
     st.session_state.test_started = False
@@ -1034,7 +1042,7 @@ elif st.session_state.step < 4:
             exact = verifier_reponse_colonnes(choix_eleve, sol)
 
             if exact:
-                st.session_state.score += 5
+                st.session_state.score += BAREME.get(niveau_courant, 0)
 
             reponse_latex = (
                 f"{signe} \\{trigo}({angle}) \\vec{{{vecteur}}}_{{{indice}}}"
@@ -1070,7 +1078,7 @@ elif st.session_state.step < 4:
         if st.button("Valider cette question ➔", type="primary"):
             exact = choix_select in q["correct_expressions"]
             if exact:
-                st.session_state.score += 5
+                st.session_state.score += BAREME.get(niveau_courant, 0)
 
             st.session_state.reponses_historique.append({
                 "niveau": niveau_courant,
