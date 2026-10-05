@@ -1146,7 +1146,8 @@ else:
     q4_val = st.session_state.reponses_historique[3]["reponse_sheet"] if q_ans > 3 else "'Non répondu"
 
     try:
-        df_existant = conn.read(ttl=0)
+        # Lire explicitement l'onglet des réponses
+        df_existant = conn.read(worksheet="Réponses", ttl=0)
 
         nouvelle_ligne = {
             "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1161,11 +1162,12 @@ else:
             "Q4_NivD": q4_val,
         }
 
-        df_maj = pd.concat(
-            [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
-        )
-        conn.update(data=df_maj)
-        st.success(" Vos résultats ont été enregistrés dans Google Sheets.")
+        df_maj = pd.concat([df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
+        
+        # Mettre à jour uniquement l'onglet des réponses
+        conn.update(worksheet="Réponses", data=df_maj)
+        st.success("Vos résultats ont été enregistrés dans Google Sheets.")
+        
 
         # --- GENERATION DU CLASSEMENT (LEADERBOARD) ---
         st.subheader("🏆 Classement Général (Top Score & Vitesse)")
