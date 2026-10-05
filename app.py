@@ -893,21 +893,43 @@ if "test_started" not in st.session_state:
     st.session_state.show_popup = False
 
 if not st.session_state.test_started:
+    # 1. Lecture de l'onglet 'Eleves' depuis Google Sheets
+    try:
+        df_eleves = conn.read(worksheet="Eleves", ttl=3600)
+    except Exception as e:
+        st.error(f"Impossible de charger la liste des élèves depuis l'onglet 'Eleves' : {e}")
+        st.stop()
+
     with st.form("form_identite"):
         st.subheader("Identification")
-        col_a, col_b, col_c = st.columns(3)
-        with col_a:
-            nom = st.text_input("Nom").strip()
-        with col_b:
-            prenom = st.text_input("Prénom").strip()
-        with col_c:
-            classe = st.selectbox("Classe", ["PCSI 1", "PCSI 2"])
+        
+        col_classe, col_eleve = st.columns([1, 2])
+        
+        with col_classe:
+            # Choix de la classe (s'adapte à "PCSI1" ou "PCSI2" comme dans ton Sheet)
+            classes_disponibles = sorted(df_eleves["Classe"].unique().tolist())
+            classe_choisie = st.selectbox("Classe", classes_disponibles)
+        
+        with col_eleve:
+            # Filtrage des élèves selon la classe sélectionnée
+            df_filtre = df_eleves[df_eleves["Classe"] == classe_choisie]
+            
+            # Création de la liste "NOM Prénom"
+            liste_noms = (df_filtre["Nom"] + " " + df_filtre["Prénom"]).sort_values().tolist()
+            
+            eleve_selectionne = st.selectbox(
+                "Sélectionnez votre Nom et Prénom",
+                ["-- Choisir dans la liste --"] + liste_noms
+            )
 
         if st.form_submit_button("Commencer l'évaluation"):
-            if nom and prenom:
-                st.session_state.nom = nom
-                st.session_state.prenom = prenom
-                st.session_state.classe = classe
+            if eleve_selectionne != "-- Choisir dans la liste --":
+                # Récupération du Nom et du Prénom séparés
+                eleve_row = df_filtre[(df_filtre["Nom"] + " " + df_filtre["Prénom"]) == eleve_selectionne].iloc[0]
+                
+                st.session_state.nom = eleve_row["Nom"]
+                st.session_state.prenom = eleve_row["Prénom"]
+                st.session_state.classe = classe_choisie
                 st.session_state.test_started = True
                 st.session_state.show_popup = True
                 st.session_state.start_time = time.time()
@@ -923,6 +945,8 @@ if not st.session_state.test_started:
 
                 st.session_state.questions_selectionnees = q_list
                 st.rerun()
+            else:
+                st.error("⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer.")
 
 # --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE ---
 elif st.session_state.step < 4:
