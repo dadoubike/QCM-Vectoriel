@@ -50,6 +50,30 @@ def verifier_vecteur_egal(vec_user, ind_user, vec_sol, ind_sol):
     equivalents = EQUIVALENCES_VECTEURS.get((vec_sol, ind_sol), [])
     return (vec_user, ind_user) in equivalents
 
+def verifier_reponse_colonnes(reponse_eleve, solution_qcm):
+    """
+    Vérifie les choix de l'élève par rapport au dictionnaire solution.
+    - Si trigo == "1", l'angle est ignoré (toujours valide).
+    - Sinon, l'angle doit correspondre exactement à la solution.
+    """
+    signe_ok = reponse_eleve.get("signe") == solution_qcm.get("signe")
+    trigo_ok = reponse_eleve.get("trigo") == solution_qcm.get("trigo")
+    
+    # Vérification du vecteur et de l'indice avec équivalences
+    vecteur_ok = verifier_vecteur_egal(
+        reponse_eleve.get("vecteur"),
+        reponse_eleve.get("indice"),
+        solution_qcm.get("vecteur"),
+        solution_qcm.get("indice")
+    )
+
+    # L'angle n'a d'importance que si une fonction trigo (sin/cos) est choisie
+    if reponse_eleve.get("trigo") == "1":
+        angle_ok = True
+    else:
+        angle_ok = reponse_eleve.get("angle") == solution_qcm.get("angle")
+
+    return signe_ok and trigo_ok and vecteur_ok and angle_ok
 
 # --- BANQUE DE QUESTIONS ---
 BANQUE_QUESTIONS = {
@@ -998,16 +1022,16 @@ elif st.session_state.step < 4:
         if st.button("Valider cette question ➔", type="primary"):
             sol = q["solution"]
 
-            vecteur_valide = verifier_vecteur_egal(
-                vecteur, indice, sol["vecteur"], sol["indice"]
-            )
+            choix_eleve = {
+                "signe": signe,
+                "trigo": trigo,
+                "angle": angle,
+                "vecteur": vecteur,
+                "indice": indice
+            }
 
-            exact = (
-                signe == sol["signe"]
-                and trigo == sol["trigo"]
-                and angle == sol["angle"]
-                and vecteur_valide
-            )
+            # Validation utilisant la tolérance sur l'angle quand trigo == "1"
+            exact = verifier_reponse_colonnes(choix_eleve, sol)
 
             if exact:
                 st.session_state.score += 5
