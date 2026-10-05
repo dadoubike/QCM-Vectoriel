@@ -781,7 +781,7 @@ if "test_started" not in st.session_state:
 # --- 1. IDENTIFICATION ---
 if not st.session_state.test_started:
     try:
-        df_eleves = conn.read(worksheet="Eleves", ttl=3600)
+        df_eleves = conn.read(worksheet="Eleves", ttl=0)
     except Exception as e:
         st.error(f"Erreur de chargement de la liste des élèves : {e}")
         st.stop()
