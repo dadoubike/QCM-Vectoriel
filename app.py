@@ -893,60 +893,57 @@ if "test_started" not in st.session_state:
     st.session_state.show_popup = False
 
 if not st.session_state.test_started:
-    # 1. Lecture de l'onglet 'Eleves' depuis Google Sheets
     try:
+        # Chargement de la liste depuis Google Sheets
         df_eleves = conn.read(worksheet="Eleves", ttl=3600)
     except Exception as e:
-        st.error(f"Impossible de charger la liste des élèves depuis l'onglet 'Eleves' : {e}")
+        st.error(f"Erreur de chargement de la liste des élèves : {e}")
         st.stop()
 
-    with st.form("form_identite"):
-        st.subheader("Identification")
+    st.subheader("Identification")
+    
+    col_classe, col_eleve = st.columns([1, 2])
+    
+    with col_classe:
+        classes_disponibles = sorted(df_eleves["Classe"].unique().tolist())
+        # Utilisation de key pour conserver la classe sélectionnée dans le state
+        classe_choisie = st.selectbox("Classe", classes_disponibles, key="select_classe")
+    
+    with col_eleve:
+        # Filtrage dynamique des élèves en fonction de la classe sélectionnée
+        df_filtre = df_eleves[df_eleves["Classe"] == classe_choisie]
+        liste_noms = (df_filtre["Nom"] + " " + df_filtre["Prénom"]).sort_values().tolist()
         
-        col_classe, col_eleve = st.columns([1, 2])
-        
-        with col_classe:
-            # Choix de la classe (s'adapte à "PCSI1" ou "PCSI2" comme dans ton Sheet)
-            classes_disponibles = sorted(df_eleves["Classe"].unique().tolist())
-            classe_choisie = st.selectbox("Classe", classes_disponibles)
-        
-        with col_eleve:
-            # Filtrage des élèves selon la classe sélectionnée
-            df_filtre = df_eleves[df_eleves["Classe"] == classe_choisie]
+        eleve_selectionne = st.selectbox(
+            "Sélectionnez votre Nom et Prénom",
+            ["-- Choisir dans la liste --"] + liste_noms,
+            key=f"select_eleve_{classe_choisie}"  # La clef change quand la classe change pour réinitialiser proprement le champ
+        )
+
+    if st.button("Commencer l'évaluation", type="primary"):
+        if eleve_selectionne != "-- Choisir dans la liste --":
+            eleve_row = df_filtre[(df_filtre["Nom"] + " " + df_filtre["Prénom"]) == eleve_selectionne].iloc[0]
             
-            # Création de la liste "NOM Prénom"
-            liste_noms = (df_filtre["Nom"] + " " + df_filtre["Prénom"]).sort_values().tolist()
-            
-            eleve_selectionne = st.selectbox(
-                "Sélectionnez votre Nom et Prénom",
-                ["-- Choisir dans la liste --"] + liste_noms
-            )
+            st.session_state.nom = eleve_row["Nom"]
+            st.session_state.prenom = eleve_row["Prénom"]
+            st.session_state.classe = classe_choisie
+            st.session_state.test_started = True
+            st.session_state.show_popup = True
+            st.session_state.start_time = time.time()
 
-        if st.form_submit_button("Commencer l'évaluation"):
-            if eleve_selectionne != "-- Choisir dans la liste --":
-                # Récupération du Nom et du Prénom séparés
-                eleve_row = df_filtre[(df_filtre["Nom"] + " " + df_filtre["Prénom"]) == eleve_selectionne].iloc[0]
-                
-                st.session_state.nom = eleve_row["Nom"]
-                st.session_state.prenom = eleve_row["Prénom"]
-                st.session_state.classe = classe_choisie
-                st.session_state.test_started = True
-                st.session_state.show_popup = True
-                st.session_state.start_time = time.time()
+            q_list = []
+            for niv in NIVEAUX:
+                q_copy = dict(random.choice(BANQUE_QUESTIONS[niv]))
+                if q_copy["type"] == "qcm":
+                    props = list(q_copy["propositions"])
+                    random.shuffle(props)
+                    q_copy["propositions_shuffled"] = props
+                q_list.append(q_copy)
 
-                q_list = []
-                for niv in NIVEAUX:
-                    q_copy = dict(random.choice(BANQUE_QUESTIONS[niv]))
-                    if q_copy["type"] == "qcm":
-                        props = list(q_copy["propositions"])
-                        random.shuffle(props)
-                        q_copy["propositions_shuffled"] = props
-                    q_list.append(q_copy)
-
-                st.session_state.questions_selectionnees = q_list
-                st.rerun()
-            else:
-                st.error("⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer.")
+            st.session_state.questions_selectionnees = q_list
+            st.rerun()
+        else:
+            st.error("⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer.")
 
 # --- 2. EVALUATION PROGRESSIVE AVEC CHRONOMÈTRE NATIVE ---
 elif st.session_state.step < 4:
