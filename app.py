@@ -1,10 +1,12 @@
 import os
+import shutil
 
-# Vérification des chemins de secrets sur Render
+# Si Render a placé le secret dans /etc/secrets/secrets.toml
 if os.path.exists("/etc/secrets/secrets.toml"):
-    os.environ["STREAMLIT_SECRETS_FILE"] = "/etc/secrets/secrets.toml"
-elif os.path.exists("/opt/render/project/src/.streamlit/secrets.toml"):
-    os.environ["STREAMLIT_SECRETS_FILE"] = "/opt/render/project/src/.streamlit/secrets.toml"
+    # On crée le dossier .streamlit si nécessaire
+    os.makedirs("/opt/render/project/src/.streamlit", exist_ok=True)
+    # On copie le fichier exactement là où Streamlit cherche
+    shutil.copy("/etc/secrets/secrets.toml", "/opt/render/project/src/.streamlit/secrets.toml")
 
 import datetime
 import random
@@ -15,13 +17,12 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# Correction des sauts de ligne pour la clé privée
+# Fix pour les sauts de ligne de la clé privée
 if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
     if "private_key" in st.secrets["connections"]["gsheets"]:
         st.secrets["connections"]["gsheets"]["private_key"] = st.secrets["connections"]["gsheets"]["private_key"].replace("\\n", "\n")
 
 conn = st.connection("gsheets", type=GSheetsConnection)
-
 
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
