@@ -45,7 +45,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-conn = st.connection("gsheets", type=GSheetsConnection)
+URL_GSHEET = "https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZVuQ2rRfIev8/edit?usp=sharing"
+
+conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet=URL_GSHEET)
 
 
 
