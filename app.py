@@ -17,17 +17,7 @@ if os.path.exists("/etc/secrets/secrets.toml"):
 # 2. Configuration UNIQUE de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# 3. Traitement et initialisation de la connexion Google Sheets
-conn_secrets = dict(st.secrets["connections"]["gsheets"])
-
-# On nettoie tous les champs superflus que st.connection n'aime pas
-for cle in ["type", "spreadsheet", "project_id", "auth_uri", "token_uri", "auth_provider_x509_cert_url", "client_x509_cert_url"]:
-    conn_secrets.pop(cle, None)
-
-if "private_key" in conn_secrets:
-    conn_secrets["private_key"] = conn_secrets["private_key"].replace("\\n", "\n")
-
-# 3. Initialisation standard de la connexion Google Sheets
+# 3. Connexion standard (laissée entièrement à Streamlit)
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- EN-TÊTE AVEC LOGO ET AUTEUR ---
