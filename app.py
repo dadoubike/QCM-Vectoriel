@@ -10,7 +10,7 @@ from streamlit_gsheets import GSheetsConnection
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# --- EN-TÊTE AVEC LOGO ET AUTEUR ---
+# --- EN-TÊTE AVEC LOGO ET AUTEUR (Unique) ---
 col_logo, col_titre = st.columns([1, 4])
 
 with col_logo:
@@ -849,7 +849,8 @@ def sauvegarder_reponse_actuelle():
 # --- 1. IDENTIFICATION ---
 if not st.session_state.test_started:
     try:
-        df_eleves = conn.read(worksheet="Eleves", ttl=0).fillna("")
+# Un cache de 60s accélère l'affichage tout en capturant rapidement les modifications du Sheet
+        df_eleves = conn.read(worksheet="Eleves", ttl=60).fillna("")
         df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
         df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
         df_eleves["Prénom"] = df_eleves["Prénom"].astype(str).str.strip()
@@ -1190,7 +1191,7 @@ else:
             "Q4_NivD": q4_val,
         }
 
-        df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
+        df_existant = conn.read(worksheet="Réponses", ttl=60).fillna("")
 
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
