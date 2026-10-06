@@ -6,6 +6,10 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
+import os
+
+if os.path.exists("/etc/secrets/secrets.toml"):
+    os.environ["STREAMLIT_SECRETS_FILE"] = "/etc/secrets/secrets.toml"
 
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
