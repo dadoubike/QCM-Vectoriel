@@ -12,6 +12,13 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
+# Correction des sauts de ligne pour la clé privée
+if "connections" in st.secrets and "gsheets" in st.secrets["connections"]:
+    if "private_key" in st.secrets["connections"]["gsheets"]:
+        st.secrets["connections"]["gsheets"]["private_key"] = st.secrets["connections"]["gsheets"]["private_key"].replace("\\n", "\n")
+
+conn = st.connection("gsheets", type=GSheetsConnection)
+
 
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
