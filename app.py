@@ -15,13 +15,13 @@ col_logo, col_titre = st.columns([1, 4])
 
 with col_logo:
     try:
-        st.image("Logo-Saliege-Campus-HD-Transp-rouge.jpg", width=110)
+        st.image("Logo-Saliege-Campus-HD-Transp-rouge.png", width=160)
     except Exception:
         pass
 
 with col_titre:
     st.title("📐 QCM : Produits Vectoriels Progressifs")
-    st.caption("✍️ conçu par **D. Peyrou** (Saliège Campus)")
+    st.caption("✍️ conçu par **D. Peyrou**")
 
 # CSS pour compacter les marges et optimiser l'affichage mobile
 st.markdown(
