@@ -10,6 +10,19 @@ from streamlit_gsheets import GSheetsConnection
 # Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
+# --- EN-TÊTE AVEC LOGO ET AUTEUR ---
+col_logo, col_titre = st.columns([1, 4])
+
+with col_logo:
+    try:
+        st.image("Logo-Saliege-Campus-HD-Transp-rouge.jpg", width=110)
+    except Exception:
+        pass
+
+with col_titre:
+    st.title("📐 QCM : Produits Vectoriels Progressifs")
+    st.caption("✍️ conçu par **D. Peyrou** (Saliège Campus)")
+
 # CSS pour compacter les marges et optimiser l'affichage mobile
 st.markdown(
     """
