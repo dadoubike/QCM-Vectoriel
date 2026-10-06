@@ -41,7 +41,7 @@ st.markdown(
 
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-st.title("📐 QCM : Produits Vectoriels Progressifs")
+
 
 # Durée maximale du test (5 minutes = 300 secondes)
 DUREE_MAX_SECONDES = 300
