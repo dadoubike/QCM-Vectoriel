@@ -17,8 +17,12 @@ if os.path.exists("/etc/secrets/secrets.toml"):
 # 2. Configuration UNIQUE de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# 3. Traitement de la clé privée sans modifier st.secrets (lecture seule)
+# 3. Traitement de la connexion Google Sheets
 conn_secrets = dict(st.secrets["connections"]["gsheets"])
+
+# On s'assure de retirer 'type' du dictionnaire pour éviter le doublon
+conn_secrets.pop("type", None)
+
 if "private_key" in conn_secrets:
     conn_secrets["private_key"] = conn_secrets["private_key"].replace("\\n", "\n")
 
