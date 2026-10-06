@@ -47,7 +47,7 @@ st.markdown(
 
 URL_GSHEET = "https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZVuQ2rRfIev8/edit?usp=sharing"
 
-conn = st.connection("gsheets", type=GSheetsConnection, spreadsheet=URL_GSHEET)
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 
 
@@ -858,7 +858,7 @@ def sauvegarder_reponse_actuelle():
 if not st.session_state.test_started:
     try:
 # Un cache de 60s accélère l'affichage tout en capturant rapidement les modifications du Sheet
-        df_eleves = conn.read(worksheet="Eleves", ttl=3600).fillna("")
+        df_eleves = conn.read(spreadsheet=URL_GSHEET, worksheet="Eleves", ttl=3600).fillna("")
         df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
         df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
         df_eleves["Prénom"] = df_eleves["Prénom"].astype(str).str.strip()
@@ -1205,13 +1205,14 @@ else:
             }
 
             # Lecture directe (ttl=0) effectuée UNE SEULE FOIS lors de la soumission finale de l'élève
-            df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
+            df_existant = conn.read(spreadsheet=URL_GSHEET, worksheet="Réponses", ttl=0).fillna("")
 
             df_maj = pd.concat(
                 [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
             )
 
-            conn.update(worksheet="Réponses", data=df_maj)
+            conn.update(spreadsheet=URL_GSHEET, worksheet="Réponses", data=df_maj)
+            
             st.session_state.data_saved = True
             st.session_state.df_leaderboard_cache = df_maj
             st.success("Vos résultats ont été enregistrés dans Google Sheets.")
