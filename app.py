@@ -27,7 +27,8 @@ for cle in ["type", "spreadsheet", "project_id", "auth_uri", "token_uri", "auth_
 if "private_key" in conn_secrets:
     conn_secrets["private_key"] = conn_secrets["private_key"].replace("\\n", "\n")
 
-conn = st.connection("gsheets", type=GSheetsConnection, **conn_secrets)
+# 3. Initialisation standard de la connexion Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
 
 # --- EN-TÊTE AVEC LOGO ET AUTEUR ---
 col_logo, col_titre = st.columns([1, 4])
