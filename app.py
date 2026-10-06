@@ -1,6 +1,3 @@
-Voici le code complet et nettoyé de `app.py`, sans aucun doublon ni erreur d'assignation sur `st.secrets` :
-
-```python
 import os
 import shutil
 import datetime
