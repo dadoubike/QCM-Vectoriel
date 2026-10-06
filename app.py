@@ -1,7 +1,10 @@
 import os
 
+# Vérification des chemins de secrets sur Render
 if os.path.exists("/etc/secrets/secrets.toml"):
     os.environ["STREAMLIT_SECRETS_FILE"] = "/etc/secrets/secrets.toml"
+elif os.path.exists("/opt/render/project/src/.streamlit/secrets.toml"):
+    os.environ["STREAMLIT_SECRETS_FILE"] = "/opt/render/project/src/.streamlit/secrets.toml"
 
 import datetime
 import random
