@@ -1,6 +1,7 @@
 import datetime
 import random
 import time
+import zoneinfo
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -781,7 +782,12 @@ if "test_started" not in st.session_state:
 # --- 1. IDENTIFICATION ---
 if not st.session_state.test_started:
     try:
-        df_eleves = conn.read(worksheet="Eleves", ttl=0)
+        # Relecture immédiate pour charger proprement les nouveaux élèves/testeurs
+        df_eleves = conn.read(worksheet="Eleves", ttl=0).fillna("")
+        df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
+        df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
+        df_eleves["Prénom"] = df_eleves["Prénom"].astype(str).str.strip()
+        df_eleves = df_eleves[df_eleves["Nom"] != ""]
     except Exception as e:
         st.error(f"Erreur de chargement de la liste des élèves : {e}")
         st.stop()
@@ -799,7 +805,7 @@ if not st.session_state.test_started:
     with col_eleve:
         df_filtre = df_eleves[df_eleves["Classe"] == classe_choisie]
         liste_noms = (
-            (df_filtre["Nom"] + " " + df_filtre["Prénom"]).sort_values().tolist()
+            (df_filtre["Nom"] + " " + df_filtre["Prénom"]).str.strip().sort_values().tolist()
         )
 
         eleve_selectionne = st.selectbox(
@@ -811,7 +817,7 @@ if not st.session_state.test_started:
     if st.button("Commencer l'évaluation", type="primary"):
         if eleve_selectionne != "-- Choisir dans la liste --":
             eleve_row = df_filtre[
-                (df_filtre["Nom"] + " " + df_filtre["Prénom"])
+                (df_filtre["Nom"] + " " + df_filtre["Prénom"]).str.strip()
                 == eleve_selectionne
             ].iloc[0]
 
@@ -1126,10 +1132,12 @@ else:
     )
 
     try:
-        df_existant = conn.read(worksheet="Réponses", ttl=0)
+        # Horodatage configuré explicitement sur le fuseau Europe/Paris
+        tz_paris = zoneinfo.ZoneInfo("Europe/Paris")
+        horodatage_paris = datetime.datetime.now(tz_paris).strftime("%Y-%m-%d %H:%M:%S")
 
         nouvelle_ligne = {
-            "Horodatage": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Horodatage": horodatage_paris,
             "Temps_Passe": f"'{temps_passe_str}",
             "Nom": st.session_state.nom,
             "Prenom": st.session_state.prenom,
@@ -1140,6 +1148,9 @@ else:
             "Q3_NivC": q3_val,
             "Q4_NivD": q4_val,
         }
+
+        # Relecture directe (ttl=0) et nettoyage pour éviter tout écrasement par un DataFrame vide
+        df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
 
         df_maj = pd.concat(
             [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
