@@ -1184,5 +1184,3 @@ else:
             st.error(f"Erreur d'affichage du classement : {e}")
 
     st.info("Vous pouvez fermer cette fenêtre.")
-
-```
