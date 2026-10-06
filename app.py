@@ -850,7 +850,7 @@ def sauvegarder_reponse_actuelle():
 if not st.session_state.test_started:
     try:
 # Un cache de 60s accélère l'affichage tout en capturant rapidement les modifications du Sheet
-        df_eleves = conn.read(worksheet="Eleves", ttl=60).fillna("")
+        df_eleves = conn.read(worksheet="Eleves", ttl=3600).fillna("")
         df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
         df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
         df_eleves["Prénom"] = df_eleves["Prénom"].astype(str).str.strip()
@@ -1174,56 +1174,70 @@ else:
         "reponse_sheet", "'Non répondu"
     )
 
-    try:
-        tz_paris = zoneinfo.ZoneInfo("Europe/Paris")
-        horodatage_paris = datetime.datetime.now(tz_paris).strftime("%Y-%m-%d %H:%M:%S")
+    # SAUVEGARDE EN SESSIONS / SÉCURISÉE SANS RÉSULTATS ÉCRASÉS
+    if "data_saved" not in st.session_state:
+        st.session_state.data_saved = False
 
-        nouvelle_ligne = {
-            "Horodatage": horodatage_paris,
-            "Temps_Passe": f"'{temps_passe_str}",
-            "Nom": st.session_state.nom,
-            "Prenom": st.session_state.prenom,
-            "Classe": st.session_state.classe,
-            "Note": score_total,
-            "Q1_NivA": q1_val,
-            "Q2_NivB": q2_val,
-            "Q3_NivC": q3_val,
-            "Q4_NivD": q4_val,
-        }
+    if not st.session_state.data_saved:
+        try:
+            tz_paris = zoneinfo.ZoneInfo("Europe/Paris")
+            horodatage_paris = datetime.datetime.now(tz_paris).strftime("%Y-%m-%d %H:%M:%S")
 
-        df_existant = conn.read(worksheet="Réponses", ttl=60).fillna("")
+            nouvelle_ligne = {
+                "Horodatage": horodatage_paris,
+                "Temps_Passe": f"'{temps_passe_str}",
+                "Nom": st.session_state.nom,
+                "Prenom": st.session_state.prenom,
+                "Classe": st.session_state.classe,
+                "Note": score_total,
+                "Q1_NivA": q1_val,
+                "Q2_NivB": q2_val,
+                "Q3_NivC": q3_val,
+                "Q4_NivD": q4_val,
+            }
 
-        df_maj = pd.concat(
-            [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
-        )
+            # Lecture directe (ttl=0) effectuée UNE SEULE FOIS lors de la soumission finale de l'élève
+            df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
 
-        conn.update(worksheet="Réponses", data=df_maj)
-        st.success("Vos résultats ont été enregistrés dans Google Sheets.")
+            df_maj = pd.concat(
+                [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
+            )
 
-        st.subheader("🏆 Classement Général (Top Score & Vitesse)")
+            conn.update(worksheet="Réponses", data=df_maj)
+            st.session_state.data_saved = True
+            st.session_state.df_leaderboard_cache = df_maj
+            st.success("Vos résultats ont été enregistrés dans Google Sheets.")
 
-        df_leaderboard = df_maj.copy()
-        df_leaderboard["Temps_Clean"] = (
-            df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
-        )
-        df_leaderboard["Note"] = pd.to_numeric(
-            df_leaderboard["Note"], errors="coerce"
-        )
+        except Exception as e:
+            st.error(f"Erreur lors de l'enregistrement dans Google Sheets : {e}")
 
-        df_leaderboard = df_leaderboard.sort_values(
-            by=["Note", "Temps_Clean"], ascending=[False, True]
-        ).reset_index(drop=True)
+    # AFFICHER LE CLASSEMENT DEPUIS LE CACHE D'ENREGISTREMENT
+    if st.session_state.get("data_saved", False):
+        try:
+            st.subheader("🏆 Classement Général (Top Score & Vitesse)")
 
-        df_leaderboard.index = df_leaderboard.index + 1
-        df_leaderboard.index.name = "Rang"
+            df_leaderboard = st.session_state.df_leaderboard_cache.copy()
+            df_leaderboard["Temps_Clean"] = (
+                df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
+            )
+            df_leaderboard["Note"] = pd.to_numeric(
+                df_leaderboard["Note"], errors="coerce"
+            )
 
-        df_display = df_leaderboard[
-            ["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]
-        ].rename(columns={"Temps_Clean": "Temps"})
+            df_leaderboard = df_leaderboard.sort_values(
+                by=["Note", "Temps_Clean"], ascending=[False, True]
+            ).reset_index(drop=True)
 
-        st.dataframe(df_display, use_container_width=True)
+            df_leaderboard.index = df_leaderboard.index + 1
+            df_leaderboard.index.name = "Rang"
 
-    except Exception as e:
-        st.error(f"Erreur lors du calcul du classement / Google Sheets : {e}")
+            df_display = df_leaderboard[
+                ["Nom", "Prenom", "Classe", "Note", "Temps_Clean"]
+            ].rename(columns={"Temps_Clean": "Temps"})
+
+            st.dataframe(df_display, use_container_width=True)
+
+        except Exception as e:
+            st.error(f"Erreur d'affichage du classement : {e}")
 
     st.info("Vous pouvez fermer cette fenêtre.")
