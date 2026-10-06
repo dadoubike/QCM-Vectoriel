@@ -604,7 +604,7 @@ BANQUE_QUESTIONS = {
                 r"-\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
             ],
             "correct_expressions": [
-                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_1",
+                r"+\sin(\theta)\sin(\alpha)\vec{x}_1 + \sin(\theta)\cos(\alpha)\vec{y}_1 + \cos(\theta)\sin(\alpha)\vec{z}_0",
                 r"+\sin(\theta)\vec{y}_0 + \cos(\theta)\sin(\alpha)\vec{z}_0",
             ],
             "description": "Niveau C (3/4) : Fig 0 vers Fig 2",
@@ -778,11 +778,64 @@ if "test_started" not in st.session_state:
     st.session_state.show_popup = False
     st.session_state.review_mode = False
     st.session_state.test_finished = False
+    st.session_state.is_editing = False
+
+# --- FONCTION D'ENREGISTREMENT SÉCURISÉE ---
+def sauvegarder_reponse_actuelle():
+    """Sauvegarde le choix actuel de l'utilisateur pour la question en cours."""
+    step = st.session_state.step
+    q = st.session_state.questions_selectionnees[step]
+    niveau_courant = NIVEAUX[step]
+
+    if q["type"] == "colonnes":
+        signe = st.session_state.get(f"signe_{step}", "+")
+        trigo = st.session_state.get(f"trigo_{step}", "1")
+        angle = st.session_state.get(f"angle_{step}", "α")
+        vecteur = st.session_state.get(f"vec_{step}", "x")
+        indice = st.session_state.get(f"ind_{step}", "0")
+
+        choix_eleve = {
+            "signe": signe,
+            "trigo": trigo,
+            "angle": angle,
+            "vecteur": vecteur,
+            "indice": indice,
+        }
+        exact = verifier_reponse_colonnes(choix_eleve, q["solution"])
+
+        reponse_latex = (
+            f"{signe} \\{trigo}({angle}) \\vec{{{vecteur}}}_{{{indice}}}"
+            if trigo != "1"
+            else f"{signe} \\vec{{{vecteur}}}_{{{indice}}}"
+        )
+
+        st.session_state.reponses_enregistrees[step] = {
+            "niveau": niveau_courant,
+            "enonce": q["enonce"],
+            "reponse_display": reponse_latex,
+            "reponse_sheet": (
+                f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
+                if trigo != "1"
+                else f"'{signe} {vecteur}_{indice}"
+            ),
+            "exact": exact,
+            "choix_raw": choix_eleve,
+        }
+    else:
+        choix_select = st.session_state.get(f"qcm_{step}", q["propositions_shuffled"][0])
+        exact = choix_select in q["correct_expressions"]
+
+        st.session_state.reponses_enregistrees[step] = {
+            "niveau": niveau_courant,
+            "enonce": q["enonce"],
+            "reponse_display": choix_select,
+            "reponse_sheet": f"'{choix_select}",
+            "exact": exact,
+        }
 
 # --- 1. IDENTIFICATION ---
 if not st.session_state.test_started:
     try:
-        # Relecture immédiate pour charger proprement les nouveaux élèves/testeurs
         df_eleves = conn.read(worksheet="Eleves", ttl=0).fillna("")
         df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
         df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
@@ -844,7 +897,7 @@ if not st.session_state.test_started:
                 "⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer."
             )
 
-# --- 2. ÉVALUATION PROGRESSIVE AVEC RELECTURE ---
+# --- 2. ÉVALUATION PROGRESSIVE AVEC NAVIGATION FLUIDE ---
 elif not st.session_state.test_finished and not st.session_state.review_mode:
 
     @st.fragment(run_every=1)
@@ -883,15 +936,24 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
         f" ({st.session_state.classe})"
     )
 
-    cols_nav = st.columns(4)
+    # --- BARRE DE NAVIGATION EN HAUT (AVEC SAUVEGARDE AUTOMATIQUE AU CLIC) ---
+    cols_nav = st.columns([1, 1, 1, 1, 1.5])
     for idx, niv in enumerate(NIVEAUX):
         btn_label = f"Q{idx+1} ({niv})"
         if idx == st.session_state.step:
             cols_nav[idx].button(f"👉 {btn_label}", key=f"nav_{idx}", disabled=True)
         else:
             if cols_nav[idx].button(btn_label, key=f"nav_{idx}"):
+                sauvegarder_reponse_actuelle()  # Sauvegarde auto de la question courante
                 st.session_state.step = idx
                 st.rerun()
+
+    # Bouton rapide d'accès au récapitulatif
+    with cols_nav[4]:
+        if st.button("📋 Récapitulatif", key="go_review_top"):
+            sauvegarder_reponse_actuelle()
+            st.session_state.review_mode = True
+            st.rerun()
 
     st.progress(
         (st.session_state.step + 1) / 4,
@@ -980,46 +1042,6 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
         st.write("**Aperçu de votre réponse :**")
         st.latex(f"{q['enonce']} = {formule_latex}")
 
-        btn_txt = (
-            "Enregistrer & Réviser les réponses 📋"
-            if st.session_state.step == 3
-            else "Question Suivante ➔"
-        )
-        if st.button(btn_txt, type="primary"):
-            choix_eleve = {
-                "signe": signe,
-                "trigo": trigo,
-                "angle": angle,
-                "vecteur": vecteur,
-                "indice": indice,
-            }
-            exact = verifier_reponse_colonnes(choix_eleve, q["solution"])
-
-            reponse_latex = (
-                f"{signe} \\{trigo}({angle}) \\vec{{{vecteur}}}_{{{indice}}}"
-                if trigo != "1"
-                else f"{signe} \\vec{{{vecteur}}}_{{{indice}}}"
-            )
-
-            st.session_state.reponses_enregistrees[st.session_state.step] = {
-                "niveau": niveau_courant,
-                "enonce": q["enonce"],
-                "reponse_display": reponse_latex,
-                "reponse_sheet": (
-                    f"'{signe} {trigo}({angle}) {vecteur}_{indice}"
-                    if trigo != "1"
-                    else f"'{signe} {vecteur}_{indice}"
-                ),
-                "exact": exact,
-                "choix_raw": choix_eleve,
-            }
-
-            if st.session_state.step < 3:
-                st.session_state.step += 1
-            else:
-                st.session_state.review_mode = True
-            st.rerun()
-
     else:
         def_idx = 0
         if "reponse_display" in rep_prec:
@@ -1036,51 +1058,58 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
             key=f"qcm_{st.session_state.step}",
         )
 
-        btn_txt = (
-            "Enregistrer & Réviser les réponses 📋"
-            if st.session_state.step == 3
-            else "Question Suivante ➔"
-        )
-        if st.button(btn_txt, type="primary"):
-            exact = choix_select in q["correct_expressions"]
+    # --- BOUTONS D'ACTION INTELLIGENTS EN BAS ---
+    st.markdown("---")
+    
+    # Texte dynamique du bouton selon si l'étudiant corrige depuis la page de récapitulatif
+    if st.session_state.is_editing:
+        btn_txt = "💾 Enregistrer & Revenir au récapitulatif 📋"
+    elif st.session_state.step == 3:
+        btn_txt = "Enregistrer & Réviser les réponses 📋"
+    else:
+        btn_txt = "Enregistrer & Question Suivante ➔"
 
-            st.session_state.reponses_enregistrees[st.session_state.step] = {
-                "niveau": niveau_courant,
-                "enonce": q["enonce"],
-                "reponse_display": choix_select,
-                "reponse_sheet": f"'{choix_select}",
-                "exact": exact,
-            }
+    if st.button(btn_txt, type="primary"):
+        sauvegarder_reponse_actuelle()
 
-            if st.session_state.step < 3:
-                st.session_state.step += 1
-            else:
-                st.session_state.review_mode = True
-            st.rerun()
+        if st.session_state.is_editing:
+            st.session_state.is_editing = False
+            st.session_state.review_mode = True
+        elif st.session_state.step < 3:
+            st.session_state.step += 1
+        else:
+            st.session_state.review_mode = True
+            
+        st.rerun()
 
-# --- 3. PAGE DE RELECTURE AVANT VALIDATION ---
+# --- 3. PAGE DE RELECTURE ET MODIFICATION DIRECIIONNELLE ---
 elif st.session_state.review_mode and not st.session_state.test_finished:
     st.subheader("📋 Récapitulatif de vos réponses")
     st.info(
-        "Vérifiez vos réponses ci-dessous. Vous pouvez les modifier ou valider définitivement."
+        "Vérifiez vos réponses ci-dessous. Vous pouvez modifier une question puis revenir directement ici."
     )
 
     for idx in range(4):
         q = st.session_state.questions_selectionnees[idx]
         rep = st.session_state.reponses_enregistrees.get(idx, None)
 
-        st.markdown(f"**Question {idx+1} (Niveau {NIVEAUX[idx]}) :**")
-        if rep:
-            st.latex(f"{rep['enonce']} = {rep['reponse_display']}")
-        else:
-            st.warning("Non répondue")
+        col_q, col_edit = st.columns([4, 1])
 
-        if st.button(f"✏️ Modifier la question {idx+1}", key=f"edit_{idx}"):
-            st.session_state.step = idx
-            st.session_state.review_mode = False
-            st.rerun()
+        with col_q:
+            st.markdown(f"**Question {idx+1} (Niveau {NIVEAUX[idx]}) :**")
+            if rep:
+                st.latex(f"{rep['enonce']} = {rep['reponse_display']}")
+            else:
+                st.warning("Non répondue")
 
-    st.markdown("---")
+        with col_edit:
+            if st.button("✏️ Modifier", key=f"edit_{idx}"):
+                st.session_state.step = idx
+                st.session_state.is_editing = True  # Mode modification activé
+                st.session_state.review_mode = False
+                st.rerun()
+
+        st.markdown("---")
 
     col_val1, col_val2 = st.columns(2)
     with col_val1:
@@ -1132,7 +1161,6 @@ else:
     )
 
     try:
-        # Horodatage configuré explicitement sur le fuseau Europe/Paris
         tz_paris = zoneinfo.ZoneInfo("Europe/Paris")
         horodatage_paris = datetime.datetime.now(tz_paris).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -1149,7 +1177,6 @@ else:
             "Q4_NivD": q4_val,
         }
 
-        # Relecture directe (ttl=0) et nettoyage pour éviter tout écrasement par un DataFrame vide
         df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
 
         df_maj = pd.concat(
