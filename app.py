@@ -1116,10 +1116,54 @@ def sauvegarder_reponse_actuelle():
 
 
 # ============================================================
+# DÉMARRAGE DIFFÉRÉ DU TEST
+# ============================================================
+
+if st.session_state.get("start_pending", False):
+
+    temps_attente = (
+        time.time()
+        - st.session_state.start_pending_time
+    )
+
+    temps_restant = (
+        st.session_state.start_delay
+        - temps_attente
+    )
+
+    if temps_restant > 0:
+
+        st.subheader("⏳ Préparation du test")
+
+        st.info(
+            f"Le test va commencer dans "
+            f"**{temps_restant:.1f} seconde(s)**..."
+        )
+
+        time.sleep(0.2)
+        st.rerun()
+
+    else:
+
+        # Le délai est terminé :
+        # le vrai chronomètre commence maintenant.
+
+        st.session_state.start_pending = False
+        st.session_state.test_started = True
+        st.session_state.show_popup = True
+
+        # IMPORTANT :
+        # les 5 minutes commencent seulement maintenant.
+        st.session_state.start_time = time.time()
+
+        st.rerun()
+
+
+# ============================================================
 # 1. IDENTIFICATION
 # ============================================================
 
-if not st.session_state.test_started:
+elif not st.session_state.test_started:
 
     # --------------------------------------------------------
     # CHARGEMENT DES ÉLÈVES
