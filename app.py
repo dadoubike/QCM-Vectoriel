@@ -979,29 +979,286 @@ if "test_started" not in st.session_state:
     # Gestion du démarrage différé
     # --------------------------------------------------------
 
-    st.session_state.start_pending = False
-
-    st.session_state.start_delay = 0
-
-    st.session_state.start_pending_time = None
-
-    # --------------------------------------------------------
-    # Gestion de la sauvegarde finale
-    # --------------------------------------------------------
-
     st.session_state.save_pending = False
-
     st.session_state.save_delay = 0
-
     st.session_state.save_pending_time = None
-
+    
     st.session_state.data_saved = False
-
+    st.session_state.timeout_auto = False
+    st.session_state.start_time = None
+    st.session_state.end_time = None
+    
     # --------------------------------------------------------
     # Classement
     # --------------------------------------------------------
-
+    
     st.session_state.df_leaderboard_cache = pd.DataFrame()
+
+# ============================================================
+# GESTION DU CLASSEMENT
+# ============================================================
+
+def temps_en_secondes(temps):
+    """
+    Convertit un temps MM:SS en secondes.
+    Retourne une très grande valeur si le format est invalide.
+    """
+
+    try:
+        temps = str(temps).replace("'", "").strip()
+
+        parties = temps.split(":")
+
+        if len(parties) == 2:
+            minutes = int(parties[0])
+            secondes = int(parties[1])
+
+            return minutes * 60 + secondes
+
+    except Exception:
+        pass
+
+    return 999999
+
+
+def mettre_a_jour_classement(nouvelle_ligne):
+    """
+    Ajoute ou met à jour la meilleure performance
+    de l'élève dans la feuille Classement.
+
+    Règles :
+    - meilleure note = priorité
+    - à note identique, meilleur temps = priorité
+    - toutes les tentatives restent dans Réponses
+    """
+
+    worksheet_classement = (
+        conn.client._select_worksheet(
+            worksheet="Classement"
+        )
+    )
+
+    # --------------------------------------------------------
+    # LECTURE ACTUELLE DU CLASSEMENT
+    # --------------------------------------------------------
+
+    df_classement = conn.read(
+        worksheet="Classement",
+        ttl=0
+    ).fillna("")
+
+    # --------------------------------------------------------
+    # CLÉ DE L'ÉLÈVE
+    # --------------------------------------------------------
+
+    nom = str(
+        nouvelle_ligne["Nom"]
+    ).strip().lower()
+
+    prenom = str(
+        nouvelle_ligne["Prenom"]
+    ).strip().lower()
+
+    classe = str(
+        nouvelle_ligne["Classe"]
+    ).strip().lower()
+
+    cle_nouvel_eleve = (
+        f"{nom} | {prenom} | {classe}"
+    )
+
+    # --------------------------------------------------------
+    # SI LA FEUILLE EST VIDE
+    # --------------------------------------------------------
+
+    if df_classement.empty:
+
+        worksheet_classement.append_row(
+            [
+                nouvelle_ligne["Nom"],
+                nouvelle_ligne["Prenom"],
+                nouvelle_ligne["Classe"],
+                nouvelle_ligne["Note"],
+                nouvelle_ligne["Temps_Passe"],
+                nouvelle_ligne["Horodatage"],
+            ],
+            value_input_option="USER_ENTERED"
+        )
+
+        return True
+
+    # --------------------------------------------------------
+    # NORMALISATION DES COLONNES
+    # --------------------------------------------------------
+
+    colonnes_attendues = [
+        "Nom",
+        "Prenom",
+        "Classe",
+        "Note",
+        "Temps_Passe",
+        "Horodatage",
+    ]
+
+    for colonne in colonnes_attendues:
+
+        if colonne not in df_classement.columns:
+
+            raise ValueError(
+                f"La colonne '{colonne}' est absente "
+                "de la feuille Classement."
+            )
+
+    # --------------------------------------------------------
+    # CRÉATION DES CLÉS
+    # --------------------------------------------------------
+
+    df_classement["Eleve_Key"] = (
+
+        df_classement["Nom"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+
+        + " | "
+
+        + df_classement["Prenom"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+
+        + " | "
+
+        + df_classement["Classe"]
+        .astype(str)
+        .str.strip()
+        .str.lower()
+    )
+
+    # --------------------------------------------------------
+    # RECHERCHE DE L'ÉLÈVE
+    # --------------------------------------------------------
+
+    lignes_eleve = df_classement[
+        df_classement["Eleve_Key"]
+        == cle_nouvel_eleve
+    ]
+
+    # --------------------------------------------------------
+    # L'ÉLÈVE N'EXISTE PAS ENCORE
+    # --------------------------------------------------------
+
+    if lignes_eleve.empty:
+
+        worksheet_classement.append_row(
+            [
+                nouvelle_ligne["Nom"],
+                nouvelle_ligne["Prenom"],
+                nouvelle_ligne["Classe"],
+                nouvelle_ligne["Note"],
+                nouvelle_ligne["Temps_Passe"],
+                nouvelle_ligne["Horodatage"],
+            ],
+            value_input_option="USER_ENTERED"
+        )
+
+        return True
+
+    # --------------------------------------------------------
+    # L'ÉLÈVE EXISTE : COMPARAISON
+    # --------------------------------------------------------
+
+    index_df = lignes_eleve.index[0]
+
+    ancienne_note = pd.to_numeric(
+        df_classement.loc[
+            index_df,
+            "Note"
+        ],
+        errors="coerce"
+    )
+
+    ancienne_note = (
+        float(ancienne_note)
+        if pd.notna(ancienne_note)
+        else -1
+    )
+
+    ancien_temps = temps_en_secondes(
+        df_classement.loc[
+            index_df,
+            "Temps_Passe"
+        ]
+    )
+
+    nouvelle_note = float(
+        nouvelle_ligne["Note"]
+    )
+
+    nouveau_temps = temps_en_secondes(
+        nouvelle_ligne["Temps_Passe"]
+    )
+
+    # --------------------------------------------------------
+    # DÉTERMINATION DE LA MEILLEURE PERFORMANCE
+    # --------------------------------------------------------
+
+    nouvelle_est_meilleure = (
+
+        nouvelle_note > ancienne_note
+
+        or (
+
+            nouvelle_note == ancienne_note
+
+            and nouveau_temps < ancien_temps
+        )
+    )
+
+    if not nouvelle_est_meilleure:
+
+        return False
+
+    # --------------------------------------------------------
+    # NUMÉRO DE LIGNE GOOGLE SHEETS
+    #
+    # Pandas commence à 0.
+    # Google Sheets commence à 1.
+    #
+    # +2 :
+    # - +1 pour passer de l'index Python à la ligne Sheets
+    # - +1 car la ligne 1 contient les en-têtes
+    # --------------------------------------------------------
+
+    ligne_sheet = index_df + 2
+
+    # --------------------------------------------------------
+    # MISE À JOUR UNIQUEMENT DE LA LIGNE CONCERNÉE
+    #
+    # On ne réécrit PAS toute la feuille.
+    # --------------------------------------------------------
+
+    valeurs = [
+        nouvelle_ligne["Nom"],
+        nouvelle_ligne["Prenom"],
+        nouvelle_ligne["Classe"],
+        nouvelle_ligne["Note"],
+        nouvelle_ligne["Temps_Passe"],
+        nouvelle_ligne["Horodatage"],
+    ]
+
+    for numero_colonne, valeur in enumerate(
+        valeurs,
+        start=1
+    ):
+
+        worksheet_classement.update_cell(
+            ligne_sheet,
+            numero_colonne,
+            valeur
+        )
+
+    return True
 
 
 # ============================================================
@@ -1448,51 +1705,57 @@ elif (
 
     @st.fragment(run_every=1)
     def afficher_chronometre():
-
+    
         temps_ecoule = (
             time.time()
             - st.session_state.start_time
         )
-
-
+    
         temps_restant = int(
             DUREE_MAX_SECONDES
             - temps_ecoule
         )
-
-
+    
+        # --------------------------------------------------------
+        # TEMPS ÉCOULÉ
+        # --------------------------------------------------------
+    
         if temps_restant <= 0:
-
-            st.error(
-                "⏳ **Temps écoulé !** "
-                "Validation automatique du test."
+    
+            st.session_state.end_time = (
+                st.session_state.start_time
+                + DUREE_MAX_SECONDES
             )
+    
+            # Enregistre automatiquement la réponse
+            # de la question actuellement affichée.
+            sauvegarder_reponse_actuelle()
+    
+            # Indique que la fin vient du chronomètre.
+            st.session_state.timeout_auto = True
+    
+            # Fin définitive du test.
+            st.session_state.test_finished = True
 
-            st.session_state.review_mode = True
-
+            
+            
             st.rerun()
-
-
+    
+        # --------------------------------------------------------
+        # AFFICHAGE DU TEMPS RESTANT
+        # --------------------------------------------------------
+    
         minutes = (
             temps_restant // 60
         )
-
+    
         secondes = (
             temps_restant % 60
         )
-
-
-        color = (
-            "red"
-            if temps_restant < 60
-            else "normal"
-        )
-
-
+    
         st.metric(
             label="⏱ Temps restant",
             value=f"{minutes:02d}:{secondes:02d}",
-            delta_color=color,
         )
 
 
@@ -2119,16 +2382,17 @@ elif (
 
     with col_val1:
 
-        if st.button(
-            "🚀 VALIDER DÉFINITIVEMENT LE TEST",
-            type="primary"
-        ):
-
-            st.session_state.test_finished = True
-
-            st.session_state.end_time = time.time()
-
-            st.rerun()
+            if st.button(
+                "🚀 VALIDER DÉFINITIVEMENT LE TEST",
+                type="primary"
+            ):
+            
+                st.session_state.test_finished = True
+            
+                if st.session_state.end_time is None:
+                    st.session_state.end_time = time.time()
+            
+                st.rerun()
 
 
 # ============================================================
@@ -2345,23 +2609,42 @@ else:
         not st.session_state.data_saved
         and not st.session_state.save_pending
     ):
-
-        st.session_state.save_delay = (
-            random.uniform(
-                DELAI_SAUVEGARDE_MIN,
-                DELAI_SAUVEGARDE_MAX
+    
+        # --------------------------------------------------------
+        # FIN PAR TEMPS ÉCOULÉ
+        #
+        # Si le test s'est terminé automatiquement à 5 minutes,
+        # la sauvegarde est immédiate.
+        # --------------------------------------------------------
+    
+        if st.session_state.get(
+            "timeout_auto",
+            False
+        ):
+    
+            st.session_state.save_delay = 0
+    
+        # --------------------------------------------------------
+        # VALIDATION NORMALE
+        #
+        # On conserve le délai aléatoire de 2 à 12 secondes.
+        # --------------------------------------------------------
+    
+        else:
+    
+            st.session_state.save_delay = (
+                random.uniform(
+                    DELAI_SAUVEGARDE_MIN,
+                    DELAI_SAUVEGARDE_MAX
+                )
             )
-        )
-
-
+    
         st.session_state.save_pending_time = (
             time.time()
         )
-
-
+    
         st.session_state.save_pending = True
-
-
+    
         st.rerun()
 
 
@@ -2401,7 +2684,7 @@ else:
 
 
         # ====================================================
-        # ÉTAPE 3 : LECTURE FRAÎCHE + AJOUT DE LA TENTATIVE
+        # ÉTAPE 3 : AJOUT DIRECT DE LA TENTATIVE
         # ====================================================
 
         try:
@@ -2455,444 +2738,392 @@ else:
 
 
             # ------------------------------------------------
-            # LECTURE SANS CACHE
-            # ------------------------------------------------
-
-            df_existant = conn.read(
-                worksheet="Réponses",
-                ttl=0
-            ).fillna("")
-
-
-            # ------------------------------------------------
-            # AJOUT DE LA NOUVELLE TENTATIVE
+            # AJOUT DIRECT D'UNE SEULE LIGNE
             #
-            # IMPORTANT :
-            # Il n'y a volontairement PLUS de vérification
-            # "résultat déjà présent".
-            #
-            # Chaque passage crée une nouvelle ligne.
+            # On ne lit PLUS toute la feuille avant
+            # l'écriture et on ne réécrit PLUS toute la feuille.
             # ------------------------------------------------
 
-            df_maj = pd.concat(
+            worksheet = (
+                conn.client._select_worksheet(
+                    worksheet="Réponses"
+                )
+            )
 
+
+            worksheet.append_row(
                 [
-                    df_existant,
-
-                    pd.DataFrame(
-                        [nouvelle_ligne]
-                    )
+                    nouvelle_ligne["Horodatage"],
+                    nouvelle_ligne["Temps_Passe"],
+                    nouvelle_ligne["Nom"],
+                    nouvelle_ligne["Prenom"],
+                    nouvelle_ligne["Classe"],
+                    nouvelle_ligne["Note"],
+                    nouvelle_ligne["Q1_NivA"],
+                    nouvelle_ligne["Q2_NivB"],
+                    nouvelle_ligne["Q3_NivC"],
+                    nouvelle_ligne["Q4_NivD"],
                 ],
-
-                ignore_index=True
+                value_input_option="USER_ENTERED"
             )
 
 
+            
             # ------------------------------------------------
-            # ÉCRITURE GOOGLE SHEETS
+            # MISE À JOUR DU CLASSEMENT
             # ------------------------------------------------
 
-            conn.update(
-                worksheet="Réponses",
-                data=df_maj
+            classement_mis_a_jour = (
+                mettre_a_jour_classement(
+                    nouvelle_ligne
+                )
             )
 
+            # ------------------------------------------------
+            # LA SAUVEGARDE EST TERMINÉE
+            # ------------------------------------------------
 
             st.session_state.data_saved = True
 
             st.session_state.save_pending = False
 
+            # ------------------------------------------------
+            # LECTURE DU CLASSEMENT
+            #
+            # On ne lit PLUS Réponses pour construire
+            # le TOP 10.
+            # ------------------------------------------------
+
+            df_leaderboard = conn.read(
+                worksheet="Classement",
+                ttl=0
+            ).fillna("")
+
             st.session_state.df_leaderboard_cache = (
-                df_maj
+                df_leaderboard
             )
-
-
-            st.success(
-                "✅ Votre tentative a été "
-                "enregistrée dans Google Sheets."
-            )
-
-
-        except Exception as e:
-
-            st.session_state.save_pending = False
-
-            st.error(
-                "❌ Erreur lors de l'enregistrement "
-                f"dans Google Sheets : {e}"
-            )
-
-
-    # ========================================================
-    # CLASSEMENT
-    # ========================================================
-
-    if st.session_state.get(
-        "data_saved",
-        False
-    ):
-
-        try:
-
-            st.subheader(
-                "🏆 TOP 10 — Meilleurs scores"
-            )
-
 
             # ------------------------------------------------
-            # UTILISATION DES DONNÉES DÉJÀ RÉCUPÉRÉES
+            # MESSAGE DE CONFIRMATION
             # ------------------------------------------------
 
-            df_leaderboard = (
-                st.session_state
-                .df_leaderboard_cache
-                .copy()
-            )
+            if classement_mis_a_jour:
 
-
-            if not df_leaderboard.empty:
-
-                # --------------------------------------------
-                # NETTOYAGE DE LA NOTE
-                # --------------------------------------------
-
-                df_leaderboard["Note"] = (
-                    pd.to_numeric(
-                        df_leaderboard["Note"],
-                        errors="coerce"
-                    )
+                st.success(
+                    "✅ Votre tentative a été enregistrée "
+                    "et votre meilleure performance a été "
+                    "mise à jour dans le classement."
                 )
-
-
-                # --------------------------------------------
-                # NETTOYAGE DU TEMPS
-                # --------------------------------------------
-
-                df_leaderboard["Temps_Clean"] = (
-
-                    df_leaderboard[
-                        "Temps_Passe"
-                    ]
-                    .astype(str)
-                    .str.replace(
-                        "'",
-                        "",
-                        regex=False
-                    )
-                )
-
-
-                # --------------------------------------------
-                # CONVERSION DU TEMPS EN SECONDES
-                #
-                # Permet un vrai tri chronologique.
-                # --------------------------------------------
-
-                def temps_en_secondes(temps):
-
-                    try:
-
-                        parties = str(
-                            temps
-                        ).split(":")
-
-                        if len(parties) == 2:
-
-                            minutes = int(
-                                parties[0]
-                            )
-
-                            secondes = int(
-                                parties[1]
-                            )
-
-                            return (
-                                minutes * 60
-                                + secondes
-                            )
-
-                    except Exception:
-
-                        pass
-
-                    return 999999
-
-
-                df_leaderboard[
-                    "Temps_Secondes"
-                ] = (
-                    df_leaderboard[
-                        "Temps_Clean"
-                    ]
-                    .apply(
-                        temps_en_secondes
-                    )
-                )
-
-
-                # --------------------------------------------
-                # CLÉ UNIQUE D'UN ÉLÈVE
-                #
-                # Nom + Prénom + Classe
-                #
-                # Toutes les tentatives restent dans le Sheet,
-                # mais une seule ligne par élève sera affichée
-                # dans le classement : sa meilleure tentative.
-                # --------------------------------------------
-
-                df_leaderboard[
-                    "Eleve_Key"
-                ] = (
-
-                    df_leaderboard["Nom"]
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-
-                    + " | "
-
-                    + df_leaderboard["Prenom"]
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-
-                    + " | "
-
-                    + df_leaderboard["Classe"]
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-                )
-
-
-                # --------------------------------------------
-                # TRI DES TENTATIVES
-                #
-                # 1. meilleure note
-                # 2. meilleur temps
-                #
-                # La première ligne de chaque élève sera
-                # donc sa meilleure performance.
-                # --------------------------------------------
-
-                df_leaderboard = (
-                    df_leaderboard
-                    .sort_values(
-                        by=[
-                            "Eleve_Key",
-                            "Note",
-                            "Temps_Secondes"
-                        ],
-                        ascending=[
-                            True,
-                            False,
-                            True
-                        ]
-                    )
-                )
-
-
-                # --------------------------------------------
-                # UNE SEULE LIGNE PAR ÉLÈVE
-                # --------------------------------------------
-
-                df_meilleurs = (
-                    df_leaderboard
-                    .drop_duplicates(
-                        subset=[
-                            "Eleve_Key"
-                        ],
-                        keep="first"
-                    )
-                    .copy()
-                )
-
-
-                # --------------------------------------------
-                # CLASSEMENT GLOBAL
-                # --------------------------------------------
-
-                df_meilleurs = (
-                    df_meilleurs
-                    .sort_values(
-                        by=[
-                            "Note",
-                            "Temps_Secondes"
-                        ],
-                        ascending=[
-                            False,
-                            True
-                        ]
-                    )
-                    .reset_index(
-                        drop=True
-                    )
-                )
-
-
-                # --------------------------------------------
-                # TOP 10 UNIQUEMENT
-                # --------------------------------------------
-
-                df_top10 = (
-                    df_meilleurs
-                    .head(10)
-                    .copy()
-                )
-
-
-                # --------------------------------------------
-                # RANG
-                # --------------------------------------------
-
-                df_top10.insert(
-                    0,
-                    "Rang",
-                    range(
-                        1,
-                        len(df_top10) + 1
-                    )
-                )
-
-
-                # --------------------------------------------
-                # PRÉSENTATION
-                # --------------------------------------------
-
-                df_display = (
-                    df_top10[
-                        [
-                            "Rang",
-                            "Nom",
-                            "Prenom",
-                            "Classe",
-                            "Note",
-                            "Temps_Clean"
-                        ]
-                    ]
-                    .rename(
-                        columns={
-                            "Temps_Clean":
-                                "Temps"
-                        }
-                    )
-                )
-
-
-                # --------------------------------------------
-                # AFFICHAGE
-                # --------------------------------------------
-
-                st.dataframe(
-                    df_display,
-                    use_container_width=True,
-                    hide_index=True
-                )
-
-
-                # --------------------------------------------
-                # MESSAGE SI L'ÉLÈVE EST DANS LE TOP 10
-                # --------------------------------------------
-
-                nom_actuel = (
-                    str(
-                        st.session_state.nom
-                    )
-                    .strip()
-                    .lower()
-                )
-
-                prenom_actuel = (
-                    str(
-                        st.session_state.prenom
-                    )
-                    .strip()
-                    .lower()
-                )
-
-                classe_actuelle = (
-                    str(
-                        st.session_state.classe
-                    )
-                    .strip()
-                    .lower()
-                )
-
-
-                cle_actuelle = (
-                    f"{nom_actuel} | "
-                    f"{prenom_actuel} | "
-                    f"{classe_actuelle}"
-                )
-
-
-                eleve_top10 = df_top10[
-                    df_top10["Eleve_Key"]
-                    == cle_actuelle
-                ]
-
-
-                if not eleve_top10.empty:
-
-                    rang = int(
-                        eleve_top10.iloc[0]["Rang"]
-                    )
-
-                    meilleur_score = int(
-                        eleve_top10.iloc[0]["Note"]
-                    )
-
-                    st.success(
-                        f"🎉 Bravo ! Votre meilleur score "
-                        f"vous place actuellement "
-                        f"**{rang}e du TOP 10** "
-                        f"avec **{meilleur_score}/20**."
-                    )
-
-
-                else:
-
-                    # ----------------------------------------
-                    # MEILLEUR SCORE PERSONNEL
-                    # ----------------------------------------
-
-                    historique_eleve = (
-                        df_meilleurs[
-                            df_meilleurs["Eleve_Key"]
-                            == cle_actuelle
-                        ]
-                    )
-
-
-                    if not historique_eleve.empty:
-
-                        meilleur_score = int(
-                            historique_eleve.iloc[0]["Note"]
-                        )
-
-                        st.info(
-                            f"💪 Votre meilleur score est "
-                            f"actuellement de "
-                            f"**{meilleur_score}/20**. "
-                            f"Retentez pour progresser "
-                            f"et peut-être entrer dans le TOP 10 !"
-                        )
-
 
             else:
 
-                st.info(
-                    "Aucun résultat disponible "
-                    "dans le classement pour le moment."
+                st.success(
+                    "✅ Votre tentative a été enregistrée. "
+                    "Votre meilleur score reste inchangé."
                 )
-
-
         except Exception as e:
 
+            st.session_state.save_pending = False
+        
             st.error(
-                "Erreur d'affichage du classement : "
+                "❌ Erreur lors de l'enregistrement : "
                 f"{e}"
             )
+
+
+
+# ========================================================
+# CLASSEMENT
+# ========================================================
+
+if st.session_state.get(
+    "data_saved",
+    False
+):
+
+    try:
+
+        st.subheader(
+            "🏆 TOP 10 — Meilleurs scores"
+        )
+
+        # ------------------------------------------------
+        # UTILISATION DE LA FEUILLE CLASSEMENT
+        # ------------------------------------------------
+
+        df_leaderboard = (
+            st.session_state
+            .df_leaderboard_cache
+            .copy()
+        )
+
+        if not df_leaderboard.empty:
+
+            # --------------------------------------------
+            # NETTOYAGE DE LA NOTE
+            # --------------------------------------------
+
+            df_leaderboard["Note"] = (
+                pd.to_numeric(
+                    df_leaderboard["Note"],
+                    errors="coerce"
+                )
+            )
+
+            # --------------------------------------------
+            # NETTOYAGE DU TEMPS
+            # --------------------------------------------
+
+            df_leaderboard["Temps_Clean"] = (
+
+                df_leaderboard[
+                    "Temps_Passe"
+                ]
+                .astype(str)
+                .str.replace(
+                    "'",
+                    "",
+                    regex=False
+                )
+                .str.strip()
+            )
+
+            # --------------------------------------------
+            # CONVERSION DU TEMPS
+            # --------------------------------------------
+
+            df_leaderboard[
+                "Temps_Secondes"
+            ] = (
+                df_leaderboard[
+                    "Temps_Clean"
+                ]
+                .apply(
+                    temps_en_secondes
+                )
+            )
+
+            # --------------------------------------------
+            # TRI GLOBAL
+            #
+            # 1. meilleure note
+            # 2. meilleur temps
+            # --------------------------------------------
+
+            df_leaderboard = (
+                df_leaderboard
+                .sort_values(
+                    by=[
+                        "Note",
+                        "Temps_Secondes"
+                    ],
+                    ascending=[
+                        False,
+                        True
+                    ]
+                )
+                .reset_index(
+                    drop=True
+                )
+            )
+
+            # --------------------------------------------
+            # TOP 10
+            # --------------------------------------------
+
+            df_top10 = (
+                df_leaderboard
+                .head(10)
+                .copy()
+            )
+
+            # --------------------------------------------
+            # RANG
+            # --------------------------------------------
+
+            df_top10.insert(
+                0,
+                "Rang",
+                range(
+                    1,
+                    len(df_top10) + 1
+                )
+            )
+
+            # --------------------------------------------
+            # PRÉSENTATION
+            # --------------------------------------------
+
+            df_display = (
+                df_top10[
+                    [
+                        "Rang",
+                        "Nom",
+                        "Prenom",
+                        "Classe",
+                        "Note",
+                        "Temps_Clean"
+                    ]
+                ]
+                .rename(
+                    columns={
+                        "Temps_Clean":
+                            "Temps"
+                    }
+                )
+            )
+
+            # --------------------------------------------
+            # AFFICHAGE
+            # --------------------------------------------
+
+            st.dataframe(
+                df_display,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            # --------------------------------------------
+            # CLÉ DE L'ÉLÈVE ACTUEL
+            # --------------------------------------------
+
+            nom_actuel = (
+                str(
+                    st.session_state.nom
+                )
+                .strip()
+                .lower()
+            )
+
+            prenom_actuel = (
+                str(
+                    st.session_state.prenom
+                )
+                .strip()
+                .lower()
+            )
+
+            classe_actuelle = (
+                str(
+                    st.session_state.classe
+                )
+                .strip()
+                .lower()
+            )
+
+            cle_actuelle = (
+                f"{nom_actuel} | "
+                f"{prenom_actuel} | "
+                f"{classe_actuelle}"
+            )
+
+            # --------------------------------------------
+            # AJOUT DE LA CLÉ
+            # --------------------------------------------
+
+            df_top10["Eleve_Key"] = (
+
+                df_top10["Nom"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+
+                + " | "
+
+                + df_top10["Prenom"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+
+                + " | "
+
+                + df_top10["Classe"]
+                .astype(str)
+                .str.strip()
+                .str.lower()
+            )
+
+            # --------------------------------------------
+            # ÉLÈVE DANS LE TOP 10 ?
+            # --------------------------------------------
+
+            eleve_top10 = df_top10[
+                df_top10["Eleve_Key"]
+                == cle_actuelle
+            ]
+
+            if not eleve_top10.empty:
+
+                rang = int(
+                    eleve_top10.iloc[0]["Rang"]
+                )
+
+                meilleur_score = int(
+                    eleve_top10.iloc[0]["Note"]
+                )
+
+                st.success(
+                    f"🎉 Bravo ! Votre meilleur score "
+                    f"vous place actuellement "
+                    f"**{rang}e du TOP 10** "
+                    f"avec **{meilleur_score}/20**."
+                )
+
+            else:
+
+                # ----------------------------------------
+                # RECHERCHE DU MEILLEUR SCORE PERSONNEL
+                # ----------------------------------------
+
+                historique_eleve = df_leaderboard[
+                    (
+                        df_leaderboard["Nom"]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        + " | "
+                        +
+                        df_leaderboard["Prenom"]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                        + " | "
+                        +
+                        df_leaderboard["Classe"]
+                        .astype(str)
+                        .str.strip()
+                        .str.lower()
+                    )
+                    == cle_actuelle
+                ]
+
+                if not historique_eleve.empty:
+
+                    meilleur_score = int(
+                        historique_eleve.iloc[0]["Note"]
+                    )
+
+                    st.info(
+                        f"💪 Votre meilleur score est "
+                        f"actuellement de "
+                        f"**{meilleur_score}/20**. "
+                        f"Retentez pour progresser "
+                        f"et peut-être entrer dans le TOP 10 !"
+                    )
+
+        else:
+
+            st.info(
+                "Aucun résultat disponible "
+                "dans le classement pour le moment."
+            )
+
+    except Exception as e:
+
+        st.error(
+            "Erreur d'affichage du classement : "
+            f"{e}"
+        )
 
 
     # ========================================================
@@ -2906,82 +3137,61 @@ else:
     )
 
 
-    if st.button(
-        "🔄 Recommencer une nouvelle tentative",
-        type="primary",
-        use_container_width=True
-    ):
-
-        # ----------------------------------------------------
-        # RÉINITIALISATION COMPLÈTE POUR UNE NOUVELLE TENTATIVE
-        # ----------------------------------------------------
+    if st.button("🔄 Refaire le test"):
 
         st.session_state.test_started = False
-
         st.session_state.step = 0
-
         st.session_state.reponses_enregistrees = {}
-
         st.session_state.show_popup = False
-
         st.session_state.review_mode = False
-
         st.session_state.test_finished = False
-
         st.session_state.is_editing = False
 
-
-        # ----------------------------------------------------
-        # GESTION DU DÉMARRAGE DIFFÉRÉ
-        # ----------------------------------------------------
-
         st.session_state.start_pending = False
-
         st.session_state.start_delay = 0
-
         st.session_state.start_pending_time = None
 
-
-        # ----------------------------------------------------
-        # GESTION DE LA SAUVEGARDE
-        # ----------------------------------------------------
-
         st.session_state.save_pending = False
-
         st.session_state.save_delay = 0
-
         st.session_state.save_pending_time = None
 
         st.session_state.data_saved = False
+        st.session_state.timeout_auto = False
 
-
-        # ----------------------------------------------------
-        # NOUVELLES QUESTIONS
-        # ----------------------------------------------------
-
+        # IMPORTANT :
+        # c'est cette variable qui contient les questions
         st.session_state.questions_selectionnees = []
 
-
-        # ----------------------------------------------------
-        # CHRONOMÈTRE
-        # ----------------------------------------------------
-
         st.session_state.start_time = None
-
         st.session_state.end_time = None
 
+        st.session_state.df_leaderboard_cache = pd.DataFrame()
 
         # ----------------------------------------------------
-        # CLASSEMENT
+        # NETTOYAGE DES ANCIENNES VALEURS DES WIDGETS
         # ----------------------------------------------------
 
-        st.session_state.df_leaderboard_cache = (
-            pd.DataFrame()
-        )
+        cles_test = [
+            key
+            for key in list(st.session_state.keys())
+            if (
+                key.startswith("signe_")
+                or key.startswith("trigo_")
+                or key.startswith("angle_")
+                or key.startswith("vec_")
+                or key.startswith("ind_")
+                or key.startswith("qcm_")
+                or key.startswith("select_eleve_")
+                or key.startswith("nav_")
+                or key.startswith("edit_")
+            )
+        ]
 
+        for key in cles_test:
+            del st.session_state[key]
 
         # ----------------------------------------------------
-        # RETOUR À L'IDENTIFICATION
+        # RELANCE DE L'APPLICATION
         # ----------------------------------------------------
 
         st.rerun()
