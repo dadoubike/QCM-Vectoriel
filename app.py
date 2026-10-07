@@ -1,5 +1,3 @@
-import os
-import shutil
 import datetime
 import random
 import time
@@ -9,18 +7,10 @@ import pandas as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 
-# 1. Gestion du fichier secrets de Render
-if os.path.exists("/etc/secrets/secrets.toml"):
-    os.makedirs("/opt/render/project/src/.streamlit", exist_ok=True)
-    shutil.copy("/etc/secrets/secrets.toml", "/opt/render/project/src/.streamlit/secrets.toml")
-
-# 2. Configuration UNIQUE de la page
+# Configuration de la page
 st.set_page_config(page_title="QCM - Produits Vectoriels", page_icon="📐")
 
-# 3. Connexion standard (laissée entièrement à Streamlit)
-conn = st.connection("gsheets", type=GSheetsConnection)
-
-# --- EN-TÊTE AVEC LOGO ET AUTEUR ---
+# --- EN-TÊTE AVEC LOGO ET AUTEUR (Unique) ---
 col_logo, col_titre = st.columns([1, 4])
 
 with col_logo:
@@ -49,7 +39,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-URL_GSHEET = "https://docs.google.com/spreadsheets/d/1HAsgs2g1zYVH7bxl_37MNU24nmEHMgcZVuQ2rRfIev8/edit?usp=sharing"
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+
 
 # Durée maximale du test (5 minutes = 300 secondes)
 DUREE_MAX_SECONDES = 300
@@ -74,7 +66,11 @@ def verifier_vecteur_egal(vec_user, ind_user, vec_sol, ind_sol):
 
 
 def verifier_reponse_colonnes(reponse_eleve, solution_qcm):
-    """Vérifie les choix de l'élève par rapport au dictionnaire solution."""
+    """
+    Vérifie les choix de l'élève par rapport au dictionnaire solution.
+    - Si trigo == "1", l'angle est ignoré (toujours valide).
+    - Sinon, l'angle doit correspondre exactement à la solution.
+    """
     signe_ok = reponse_eleve.get("signe") == solution_qcm.get("signe")
     trigo_ok = reponse_eleve.get("trigo") == solution_qcm.get("trigo")
 
@@ -797,7 +793,7 @@ if "test_started" not in st.session_state:
     st.session_state.test_finished = False
     st.session_state.is_editing = False
 
-
+# --- FONCTION D'ENREGISTREMENT SÉCURISÉE ---
 def sauvegarder_reponse_actuelle():
     """Sauvegarde le choix actuel de l'utilisateur pour la question en cours."""
     step = st.session_state.step
@@ -839,9 +835,7 @@ def sauvegarder_reponse_actuelle():
             "choix_raw": choix_eleve,
         }
     else:
-        choix_select = st.session_state.get(
-            f"qcm_{step}", q["propositions_shuffled"][0]
-        )
+        choix_select = st.session_state.get(f"qcm_{step}", q["propositions_shuffled"][0])
         exact = choix_select in q["correct_expressions"]
 
         st.session_state.reponses_enregistrees[step] = {
@@ -852,11 +846,11 @@ def sauvegarder_reponse_actuelle():
             "exact": exact,
         }
 
-
 # --- 1. IDENTIFICATION ---
 if not st.session_state.test_started:
     try:
-        df_eleves = conn.read(spreadsheet=URL_GSHEET, worksheet="Eleves", ttl=3600).fillna("")
+# Un cache de 60s accélère l'affichage tout en capturant rapidement les modifications du Sheet
+        df_eleves = conn.read(worksheet="Eleves", ttl=3600).fillna("")
         df_eleves["Classe"] = df_eleves["Classe"].astype(str).str.strip()
         df_eleves["Nom"] = df_eleves["Nom"].astype(str).str.strip()
         df_eleves["Prénom"] = df_eleves["Prénom"].astype(str).str.strip()
@@ -913,9 +907,11 @@ if not st.session_state.test_started:
             st.session_state.questions_selectionnees = q_list
             st.rerun()
         else:
-            st.error("⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer.")
+            st.error(
+                "⚠️ Veuillez sélectionner votre nom dans la liste avant de démarrer."
+            )
 
-# --- 2. ÉVALUATION PROGRESSIVE ---
+# --- 2. ÉVALUATION PROGRESSIVE AVEC NAVIGATION FLUIDE ---
 elif not st.session_state.test_finished and not st.session_state.review_mode:
 
     @st.fragment(run_every=1)
@@ -941,16 +937,20 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
     afficher_chronometre()
 
     if st.session_state.get("show_popup", False):
-        st.info("⏱ **Le test dure 5 minutes maximum.** Répondez puis relisez vos choix avant de valider !")
+        st.info(
+            "⏱ **Le test dure 5 minutes maximum.** Répondez puis relisez vos choix avant de valider !"
+        )
         st.session_state.show_popup = False
 
     niveau_courant = NIVEAUX[st.session_state.step]
     q = st.session_state.questions_selectionnees[st.session_state.step]
 
     st.caption(
-        f"Étudiant : **{st.session_state.nom} {st.session_state.prenom}** ({st.session_state.classe})"
+        f"Étudiant : **{st.session_state.nom} {st.session_state.prenom}**"
+        f" ({st.session_state.classe})"
     )
 
+    # --- BARRE DE NAVIGATION EN HAUT (AVEC SAUVEGARDE AUTOMATIQUE AU CLIC) ---
     cols_nav = st.columns([1, 1, 1, 1, 1.5])
     for idx, niv in enumerate(NIVEAUX):
         btn_label = f"Q{idx+1} ({niv})"
@@ -958,10 +958,11 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
             cols_nav[idx].button(f"👉 {btn_label}", key=f"nav_{idx}", disabled=True)
         else:
             if cols_nav[idx].button(btn_label, key=f"nav_{idx}"):
-                sauvegarder_reponse_actuelle()
+                sauvegarder_reponse_actuelle()  # Sauvegarde auto de la question courante
                 st.session_state.step = idx
                 st.rerun()
 
+    # Bouton rapide d'accès au récapitulatif
     with cols_nav[4]:
         if st.button("📋 Récapitulatif", key="go_review_top"):
             sauvegarder_reponse_actuelle()
@@ -986,10 +987,13 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
     st.write(f"### {q['description']}")
     st.latex(f"{q['enonce']} = \dots")
 
-    rep_prec = st.session_state.reponses_enregistrees.get(st.session_state.step, {})
+    rep_prec = st.session_state.reponses_enregistrees.get(
+        st.session_state.step, {}
+    )
 
     if q["type"] == "colonnes":
         col_gauche, col_droite = st.columns(2)
+
         choix_prev = rep_prec.get("choix_raw", {})
 
         opts_signe = ["+", "-"]
@@ -1005,13 +1009,43 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
         idx_ind = opts_ind.index(choix_prev.get("indice", "0")) if choix_prev.get("indice") in opts_ind else 0
 
         with col_gauche:
-            signe = st.radio("Signe", opts_signe, horizontal=True, index=idx_signe, key=f"signe_{st.session_state.step}")
-            trigo = st.radio("Trigo", opts_trigo, horizontal=True, index=idx_trigo, key=f"trigo_{st.session_state.step}")
-            angle = st.radio("Angle", opts_angle, horizontal=True, index=idx_angle, key=f"angle_{st.session_state.step}")
+            signe = st.radio(
+                "Signe",
+                opts_signe,
+                horizontal=True,
+                index=idx_signe,
+                key=f"signe_{st.session_state.step}",
+            )
+            trigo = st.radio(
+                "Trigo",
+                opts_trigo,
+                horizontal=True,
+                index=idx_trigo,
+                key=f"trigo_{st.session_state.step}",
+            )
+            angle = st.radio(
+                "Angle",
+                opts_angle,
+                horizontal=True,
+                index=idx_angle,
+                key=f"angle_{st.session_state.step}",
+            )
 
         with col_droite:
-            vecteur = st.radio("Vecteur", opts_vec, horizontal=True, index=idx_vec, key=f"vec_{st.session_state.step}")
-            indice = st.radio("Indice", opts_ind, horizontal=True, index=idx_ind, key=f"ind_{st.session_state.step}")
+            vecteur = st.radio(
+                "Vecteur",
+                opts_vec,
+                horizontal=True,
+                index=idx_vec,
+                key=f"vec_{st.session_state.step}",
+            )
+            indice = st.radio(
+                "Indice",
+                opts_ind,
+                horizontal=True,
+                index=idx_ind,
+                key=f"ind_{st.session_state.step}",
+            )
 
         trigo_str = "" if trigo == "1" else f"\\{trigo}"
         angle_str = "" if trigo == "1" else f"({angle})"
@@ -1024,8 +1058,11 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
 
     else:
         def_idx = 0
-        if "reponse_display" in rep_prec and rep_prec["reponse_display"] in q["propositions_shuffled"]:
-            def_idx = q["propositions_shuffled"].index(rep_prec["reponse_display"])
+        if "reponse_display" in rep_prec:
+            if rep_prec["reponse_display"] in q["propositions_shuffled"]:
+                def_idx = q["propositions_shuffled"].index(
+                    rep_prec["reponse_display"]
+                )
 
         choix_select = st.radio(
             "Choisissez la bonne expression :",
@@ -1035,7 +1072,10 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
             key=f"qcm_{st.session_state.step}",
         )
 
+    # --- BOUTONS D'ACTION INTELLIGENTS EN BAS ---
     st.markdown("---")
+    
+    # Texte dynamique du bouton selon si l'étudiant corrige depuis la page de récapitulatif
     if st.session_state.is_editing:
         btn_txt = "💾 Enregistrer & Revenir au récapitulatif 📋"
     elif st.session_state.step == 3:
@@ -1053,13 +1093,15 @@ elif not st.session_state.test_finished and not st.session_state.review_mode:
             st.session_state.step += 1
         else:
             st.session_state.review_mode = True
-
+            
         st.rerun()
 
-# --- 3. PAGE DE RELECTURE ---
+# --- 3. PAGE DE RELECTURE ET MODIFICATION DIRECIIONNELLE ---
 elif st.session_state.review_mode and not st.session_state.test_finished:
     st.subheader("📋 Récapitulatif de vos réponses")
-    st.info("Vérifiez vos réponses ci-dessous. Vous pouvez modifier une question puis revenir directement ici.")
+    st.info(
+        "Vérifiez vos réponses ci-dessous. Vous pouvez modifier une question puis revenir directement ici."
+    )
 
     for idx in range(4):
         q = st.session_state.questions_selectionnees[idx]
@@ -1077,18 +1119,20 @@ elif st.session_state.review_mode and not st.session_state.test_finished:
         with col_edit:
             if st.button("✏️ Modifier", key=f"edit_{idx}"):
                 st.session_state.step = idx
-                st.session_state.is_editing = True
+                st.session_state.is_editing = True  # Mode modification activé
                 st.session_state.review_mode = False
                 st.rerun()
 
         st.markdown("---")
 
-    if st.button("🚀 VALIDER DÉFINITIVEMENT LE TEST", type="primary"):
-        st.session_state.test_finished = True
-        st.session_state.end_time = time.time()
-        st.rerun()
+    col_val1, col_val2 = st.columns(2)
+    with col_val1:
+        if st.button("🚀 VALIDER DÉFINITIVEMENT LE TEST", type="primary"):
+            st.session_state.test_finished = True
+            st.session_state.end_time = time.time()
+            st.rerun()
 
-# --- 4. BILAN FINAL ET CLASSEMENT ---
+# --- 4. BILAN FINAL, GSHEETS ET CLASSEMENT ---
 else:
     score_total = sum(
         BAREME[NIVEAUX[idx]]
@@ -1117,11 +1161,20 @@ else:
 
     st.markdown("---")
 
-    q1_val = st.session_state.reponses_enregistrees.get(0, {}).get("reponse_sheet", "'Non répondu")
-    q2_val = st.session_state.reponses_enregistrees.get(1, {}).get("reponse_sheet", "'Non répondu")
-    q3_val = st.session_state.reponses_enregistrees.get(2, {}).get("reponse_sheet", "'Non répondu")
-    q4_val = st.session_state.reponses_enregistrees.get(3, {}).get("reponse_sheet", "'Non répondu")
+    q1_val = st.session_state.reponses_enregistrees.get(0, {}).get(
+        "reponse_sheet", "'Non répondu"
+    )
+    q2_val = st.session_state.reponses_enregistrees.get(1, {}).get(
+        "reponse_sheet", "'Non répondu"
+    )
+    q3_val = st.session_state.reponses_enregistrees.get(2, {}).get(
+        "reponse_sheet", "'Non répondu"
+    )
+    q4_val = st.session_state.reponses_enregistrees.get(3, {}).get(
+        "reponse_sheet", "'Non répondu"
+    )
 
+    # SAUVEGARDE EN SESSIONS / SÉCURISÉE SANS RÉSULTATS ÉCRASÉS
     if "data_saved" not in st.session_state:
         st.session_state.data_saved = False
 
@@ -1143,11 +1196,14 @@ else:
                 "Q4_NivD": q4_val,
             }
 
-            df_existant = conn.read(spreadsheet=URL_GSHEET, worksheet="Réponses", ttl=0).fillna("")
-            df_maj = pd.concat([df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
+            # Lecture directe (ttl=0) effectuée UNE SEULE FOIS lors de la soumission finale de l'élève
+            df_existant = conn.read(worksheet="Réponses", ttl=0).fillna("")
 
-            conn.update(spreadsheet=URL_GSHEET, worksheet="Réponses", data=df_maj)
+            df_maj = pd.concat(
+                [df_existant, pd.DataFrame([nouvelle_ligne])], ignore_index=True
+            )
 
+            conn.update(worksheet="Réponses", data=df_maj)
             st.session_state.data_saved = True
             st.session_state.df_leaderboard_cache = df_maj
             st.success("Vos résultats ont été enregistrés dans Google Sheets.")
@@ -1155,13 +1211,18 @@ else:
         except Exception as e:
             st.error(f"Erreur lors de l'enregistrement dans Google Sheets : {e}")
 
+    # AFFICHER LE CLASSEMENT DEPUIS LE CACHE D'ENREGISTREMENT
     if st.session_state.get("data_saved", False):
         try:
             st.subheader("🏆 Classement Général (Top Score & Vitesse)")
 
             df_leaderboard = st.session_state.df_leaderboard_cache.copy()
-            df_leaderboard["Temps_Clean"] = df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
-            df_leaderboard["Note"] = pd.to_numeric(df_leaderboard["Note"], errors="coerce")
+            df_leaderboard["Temps_Clean"] = (
+                df_leaderboard["Temps_Passe"].astype(str).str.replace("'", "")
+            )
+            df_leaderboard["Note"] = pd.to_numeric(
+                df_leaderboard["Note"], errors="coerce"
+            )
 
             df_leaderboard = df_leaderboard.sort_values(
                 by=["Note", "Temps_Clean"], ascending=[False, True]
