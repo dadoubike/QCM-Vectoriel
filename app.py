@@ -2900,6 +2900,53 @@ else:
     # ========================================================
 
     st.info(
-        "Vous pouvez fermer cette fenêtre "
-        "ou refaire une nouvelle tentative."
-    )
+    "Votre tentative est terminée. "
+    "Vous pouvez fermer cette fenêtre ou commencer une nouvelle tentative."
+)
+
+if st.button(
+    "🔄 Recommencer une nouvelle tentative",
+    type="primary",
+    use_container_width=True
+):
+
+    # --------------------------------------------------------
+    # RÉINITIALISATION COMPLÈTE POUR UNE NOUVELLE TENTATIVE
+    # --------------------------------------------------------
+
+    st.session_state.test_started = False
+
+    st.session_state.step = 0
+
+    st.session_state.reponses_enregistrees = {}
+
+    st.session_state.show_popup = False
+
+    st.session_state.review_mode = False
+
+    st.session_state.test_finished = False
+
+    st.session_state.is_editing = False
+
+    # Gestion du démarrage différé
+    st.session_state.start_pending = False
+    st.session_state.start_delay = 0
+    st.session_state.start_pending_time = None
+
+    # Gestion de la nouvelle sauvegarde
+    st.session_state.save_pending = False
+    st.session_state.save_delay = 0
+    st.session_state.save_pending_time = None
+    st.session_state.data_saved = False
+
+    # Nouvelles questions
+    st.session_state.questions_selectionnees = []
+
+    # Chronomètre
+    st.session_state.start_time = None
+    st.session_state.end_time = None
+
+    # Classement
+    st.session_state.df_leaderboard_cache = pd.DataFrame()
+
+    st.rerun()
