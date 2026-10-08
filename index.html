@@ -31,6 +31,9 @@
         th { background-color: #f1f3f5; }
         .footer-cc { text-align: right; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
         .footer-cc img { height: 31px; opacity: 0.8; }
+		.header-flex { display: flex; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+		.header-flex > div { flex: 1; min-width: 0; }
+		.header-flex h2 { font-size: 1.2rem; word-break: break-word; margin: 0 0 5px 0; }
     </style>
 </head>
 <body>
@@ -67,10 +70,10 @@
             <div class="timer" id="timer-display">⏱ 05:00</div>
         </div>
         <hr>
-        <div style="text-align: center; margin-bottom: 15px;">
-            <img src="3Figs_geom.png" alt="Figures géométriques" style="max-width: 100%; height: auto; border-radius: 5px;" onerror="this.style.display='none'">
-            <div style="font-size: 0.8rem; color: #666;">🔍 Figure de référence pour les calculs</div>
-        </div>
+        <div style="text-align: center; margin-bottom: 15px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 5px;">
+			<img src="3Figs_geom.png" alt="Figures géométriques" style="max-width: none; width: 550px; height: auto; border-radius: 5px;" onerror="this.style.display='none'">
+			<div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔍 Glissez horizontalement ou zoomez sur la figure</div>
+		</div>
 
         <div id="titre-niveau" style="font-weight: bold; color: #333; margin-bottom: 5px;"></div>
         <div id="enonce-question" style="font-size: 1.3rem; margin: 15px 0; font-weight: bold;"></div>
