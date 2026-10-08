@@ -464,7 +464,7 @@
             .then(res => res.json())
             .then(data => {
                 let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
-                data.slice(0, 10).forEach((ligne, index) => {
+                data.slice(0, 20).forEach((ligne, index) => {
                     html += `<tr><td>${index + 1}</td><td>${ligne.nom}</td><td>${ligne.prenom}</td><td>${ligne.classe}</td><td><b>${ligne.note}/20</b></td><td>${ligne.temps}</td></tr>`;
                 });
                 html += `</table>`;
