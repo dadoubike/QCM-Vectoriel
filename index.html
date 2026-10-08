@@ -29,8 +29,8 @@
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; }
         th { background-color: #f1f3f5; }
-		.footer-cc { text-align: right; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
-		.footer-cc img { height: 31px; opacity: 0.8; }
+        .footer-cc { text-align: right; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
+        .footer-cc img { height: 31px; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -101,13 +101,15 @@
         <h3>🏆 TOP 20 — Meilleurs scores</h3>
         <div id="tableau-classement">Chargement du classement...</div>
         <br>
-        <button onclick="location.reload()">🔄 Refaire le test</button>
+        <div style="display: flex; gap: 15px;">
+            <button onclick="location.reload()" style="background-color: #d9534f;">🔄 Refaire le test pour améliorer mon score</button>
+        </div>
     </div>
-	<div class="footer-cc">
-		<a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank">
-			<img src="logoCC.png" alt="Licence Creative Commons BY-NC-SA">
-		</a>
-	</div>
+    <div class="footer-cc">
+        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank">
+            <img src="logoCC.png" alt="Licence Creative Commons BY-NC-SA">
+        </a>
+    </div>
 </div>
 
 <script>
@@ -437,8 +439,7 @@
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
 
-        // Affichage immédiat du titre et du temps
-        document.getElementById("resultat-titre").innerHTML = `🎉 Bravo ${eleveActuel.prenom} ! Votre score est de <b>${scoreTotal}/20</b>.`;
+        // Affichage immédiat du temps
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
 
         let payload = {
@@ -462,7 +463,6 @@
         }).then(() => {
             document.getElementById("message-sauvegarde").textContent = "✅ Votre tentative a été enregistrée avec succès !";
             
-            // Délai pour laisser le temps à Google Sheets de recevoir la requête avant de charger le classement
             setTimeout(() => {
                 fetch(URL_API_GOOGLE + "?action=getClassement")
                     .then(res => res.json())
@@ -473,7 +473,19 @@
                         ) + 1;
 
                         if (rang > 0) {
-                            document.getElementById("resultat-titre").innerHTML = `🎉 Bravo ${eleveActuel.prenom} ! Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> du classement !`;
+                            let messageMotivation = "";
+                            let actionConseillee = "";
+                            
+                            if (scoreTotal >= 16) {
+                                messageMotivation = `🌟 Excellent travail ${eleveActuel.prenom} !`;
+                            } else if (scoreTotal >= 10) {
+                                messageMotivation = `👍 Bien joué ${eleveActuel.prenom} !`;
+                            } else {
+                                messageMotivation = `💪 Courage ${eleveActuel.prenom}, ne lâchez rien !`;
+                                actionConseillee = `<br><span style="font-size: 0.95rem; color: #d9534f; font-weight: normal;">💡 Astuce : Vous pouvez retenter le test pour progresser et améliorer votre note !</span>`;
+                            }
+                            
+                            document.getElementById("resultat-titre").innerHTML = `${messageMotivation} Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> du classement !${actionConseillee}`;
                         }
 
                         let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
