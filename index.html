@@ -154,12 +154,8 @@
                     selectClasse.appendChild(opt);
                 });
             })
-            .catch(() => {
-                let selectClasse = document.getElementById("select-classe");
-                ["PCSI 1", "PCSI 2", "Testeur"].forEach(c => {
-                    let opt = document.createElement("option"); opt.value = c; opt.textContent = c;
-                    selectClasse.appendChild(opt);
-                });
+            .catch((err) => {
+                console.error("Erreur chargement élèves:", err);
             });
     };
 
@@ -234,7 +230,7 @@
         }, 1000);
     }
 
-		function afficherQuestionCourante() {
+    function afficherQuestionCourante() {
         let q = questionsSelectionnees[currentStep];
         let niv = NIVEAUX[currentStep];
 
@@ -312,6 +308,7 @@
         document.getElementById("btn-precedent").style.display = (currentStep === 0) ? "none" : "inline-block";
         document.getElementById("btn-suivant").textContent = (currentStep === 3) ? "Enregistrer & Réviser les réponses 📋" : "Enregistrer & Question Suivante ➔";
     }
+
     function mettreAJourApercuCol() {
         let s = document.querySelector('input[name="col_signe"]:checked')?.value || "+";
         let t = document.querySelector('input[name="col_trigo"]:checked')?.value || "1";
@@ -486,6 +483,10 @@
                 ]
             });
         }
+    }
+
+    function escapeHtml(text) {
+        return text.replace(/"/g, '&quot;');
     }
 </script>
 </body>
