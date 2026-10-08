@@ -104,8 +104,7 @@
 </div>
 
 <script>
-    // URL de votre API Google Apps Script (déployée précédemment)
-    const URL_API_GOOGLE = "https://script.google.com/macros/s/AKfycbzZCV61_da558t9mS88Pa9_jdeAAhmF-hAnV5O80K1-n2eC8g8doibYFfG-eSl3lA/exec";
+    const URL_API_GOOGLE = "https://script.google.com/macros/s/AKfycbuZZCV61_da558t9ms88Pa9_jdeAAhmF-hAnV5O80K1-n2eC8g8doibYFFg-eSl3IA/exec";
 
     let listeElevesBrute = [];
     let questionsSelectionnees = [];
@@ -115,7 +114,6 @@
     let secondesRestantes = 300;
     let eleveActuel = {};
 
-    // Équivalences géométriques axes
     const EQUIVALENCES_VECTEURS = {
         "z,0": [["z", "0"], ["z", "1"]], "z,1": [["z", "0"], ["z", "1"]],
         "y,1": [["y", "1"], ["y", "2"]], "y,2": [["y", "1"], ["y", "2"]],
@@ -125,7 +123,6 @@
     const BAREME = { "A": 2, "B": 4, "C": 6, "D": 8 };
     const NIVEAUX = ["A", "B", "C", "D"];
 
-    // Banque complète des questions
     const BANQUE_QUESTIONS = {
         "A": [
             { type: "colonnes", enonce: "\\vec{x}_0 \\wedge \\vec{x}_1", solution: {signe: "+", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A : Base 0 et 1" },
@@ -144,12 +141,11 @@
         ]
     };
 
-    // Chargement automatique des élèves depuis la feuille "Eleves" du Google Sheet via l'API Web
     window.onload = function() {
         fetch(URL_API_GOOGLE + "?action=getEleves")
             .then(res => res.json())
             .then(data => {
-                listeElevesBrute = data; // Format attendu [{classe: "PCSI 1", nom: "Dupont", prenom: "Jean"}, ...]
+                listeElevesBrute = data;
                 let classesSet = [...new Set(data.map(item => item.classe))].sort();
                 let selectClasse = document.getElementById("select-classe");
                 classesSet.forEach(c => {
@@ -159,7 +155,6 @@
                 });
             })
             .catch(() => {
-                // Fallback de secours si le mode GET n'est pas encore configuré
                 let selectClasse = document.getElementById("select-classe");
                 ["PCSI 1", "PCSI 2", "Testeur"].forEach(c => {
                     let opt = document.createElement("option"); opt.value = c; opt.textContent = c;
@@ -204,7 +199,6 @@
         let parts = eleveVal.split(" | ");
         eleveActuel = { nom: parts[0], prenom: parts[1], classe: classe };
 
-        // Sélection aléatoire des questions par niveau
         questionsSelectionnees = NIVEAUX.map(niv => {
             let pool = BANQUE_QUESTIONS[niv];
             let q = JSON.parse(JSON.stringify(pool[Math.floor(Math.random() * pool.length)]));
@@ -248,46 +242,42 @@
         document.getElementById("enonce-question").innerHTML = `$$${q.enonce} = \\dots$$`;
 
         let repPrec = reponsesEnregistrees[currentStep] || {};
+        let raw = repPrec.choixRaw || {};
         let html = "";
 
         if (q.type === "colonnes") {
-            let sVal = repPrec.signe || "+";
-            let tVal = repPrec.trigo || "1";
-            let aVal = repPrec.angle || "α";
-            let vVal = repPrec.vecteur || "x";
-            let iVal = repPrec.indice || "0";
+            let sVal = raw.signe || "+";
+            let tVal = raw.trigo || "1";
+            let aVal = raw.angle || "α";
+            let vVal = raw.vecteur || "x";
+            let iVal = raw.indice || "0";
 
             html += `<div style="display:flex; gap:20px; flex-wrap:wrap;">`;
             
-            // Signe
             html += `<div><label><b>Signe</b></label><div class="radio-group">`;
             ["+", "-"].forEach(opt => {
                 html += `<label><input type="radio" name="col_signe" value="${opt}" ${sVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
-            // Trigo
             html += `<div><label><b>Trigo</b></label><div class="radio-group">`;
             ["1", "sin", "cos"].forEach(opt => {
                 html += `<label><input type="radio" name="col_trigo" value="${opt}" ${tVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
-            // Angle
             html += `<div><label><b>Angle</b></label><div class="radio-group">`;
             ["α", "θ", "β"].forEach(opt => {
                 html += `<label><input type="radio" name="col_angle" value="${opt}" ${aVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
-            // Vecteur
             html += `<div><label><b>Vecteur</b></label><div class="radio-group">`;
             ["x", "y", "z", "0"].forEach(opt => {
                 html += `<label><input type="radio" name="col_vec" value="${opt}" ${vVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
-            // Indice
             html += `<div><label><b>Indice</b></label><div class="radio-group">`;
             ["0", "1", "2", "3"].forEach(opt => {
                 html += `<label><input type="radio" name="col_ind" value="${opt}" ${iVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
@@ -296,8 +286,7 @@
 
             html += `</div><hr><div style="margin-top:10px;"><b>Aperçu de votre réponse :</b> <span id="apercu-col" style="font-size:1.2rem;"></span></div>`;
         } else {
-            // QCM
-            q.propositionsShuffled.forEach((prop, idx) => {
+            q.propositionsShuffled.forEach((prop) => {
                 let checked = (repPrec.reponseDisplay === prop) ? "checked" : "";
                 html += `<label style="display:block; margin-bottom:12px; cursor:pointer; padding:10px; background:#f1f3f5; border-radius:5px;">
                             <input type="radio" name="qcm_choice" value="${escapeHtml(prop)}" ${checked}> $$${prop}$$
@@ -348,12 +337,10 @@
 
             let choixRaw = { signe, trigo, angle, vecteur, indice };
             
-            // Vérification exactitude colonnes
             let sol = q.solution;
             let signeOk = (signe === sol.signe);
             let trigoOk = (trigo === sol.trigo);
             let vecteurOk = (vecteur === sol.vecteur && indice === sol.indice);
-            // Gestion équivalences indices
             let cleSol = `${sol.vecteur},${sol.indice}`;
             if (EQUIVALENCES_VECTEURS[cleSol]) {
                 vecteurOk = EQUIVALENCES_VECTEURS[cleSol].some(eq => eq[0] === vecteur && eq[1] === indice);
