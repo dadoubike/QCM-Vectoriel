@@ -430,7 +430,75 @@
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
 
-        document.getElementById("resultat-titre").textContent = `Test terminé ! Votre note : ${scoreTotal} / 20`;
+        function allerAuBilan() {
+        document.getElementById("step-test").classList.add("hidden");
+        document.getElementById("step-review").classList.add("hidden");
+        document.getElementById("step-bilan").classList.remove("hidden");
+
+        let scoreTotal = 0;
+        for (let i = 0; i < 4; i++) {
+            if (reponsesEnregistrees[i] && reponsesEnregistrees[i].exact) {
+                scoreTotal += BAREME[NIVEAUX[i]];
+            }
+        }
+
+        let tempsSec = Math.min(300 - secondesRestantes, 300);
+        let m = String(Math.floor(tempsSec / 60)).padStart(2, '0');
+        let s = String(tempsSec % 60).padStart(2, '0');
+        let tempsStr = `${m}:${s}`;
+
+        document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
+
+        let payload = {
+            nom: eleveActuel.nom,
+            prenom: eleveActuel.prenom,
+            classe: eleveActuel.classe,
+            note: scoreTotal,
+            temps: tempsStr,
+            horodatage: new Date().toLocaleString("fr-FR"),
+            q1: reponsesEnregistrees[0]?.reponseDisplay || "Non répondu",
+            q2: reponsesEnregistrees[1]?.reponseDisplay || "Non répondu",
+            q3: reponsesEnregistrees[2]?.reponseDisplay || "Non répondu",
+            q4: reponsesEnregistrees[3]?.reponseDisplay || "Non répondu"
+        };
+
+        fetch(URL_API_GOOGLE, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            document.getElementById("message-sauvegarde").textContent = "✅ Votre tentative a été enregistrée avec succès !";
+            
+            // On récupère le classement pour afficher le message personnalisé avec le rang
+            fetch(URL_API_GOOGLE + "?action=getClassement")
+                .then(res => res.json())
+                .then(data => {
+                    let rang = data.findIndex(e => 
+                        e.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && 
+                        e.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase()
+                    ) + 1;
+
+                    if (rang > 0) {
+                        document.getElementById("resultat-titre").innerHTML = `🎉 Bravo ${eleveActuel.prenom} ! Votre score de <b>${scoreTotal}/20</b> vous place actuellement à la <b>${rang}e place</b> du classement !`;
+                    } else {
+                        document.getElementById("resultat-titre").textContent = `Test terminé ! Votre note : ${scoreTotal} / 20`;
+                    }
+
+                    // Affichage du tableau du TOP 20
+                    let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
+                    data.slice(0, 20).forEach((ligne, index) => {
+                        let isCurrent = (ligne.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && ligne.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
+                        let styleRow = isCurrent ? `style="background-color: #fff3cd; font-weight: bold;"` : "";
+                        html += `<tr ${styleRow}><td>${index + 1}</td><td>${ligne.nom}</td><td>${ligne.prenom}</td><td>${ligne.classe}</td><td><b>${ligne.note}/20</b></td><td>${ligne.temps}</td></tr>`;
+                    });
+                    html += `</table>`;
+                    document.getElementById("tableau-classement").innerHTML = html;
+                });
+        }).catch(() => {
+            document.getElementById("message-sauvegarde").textContent = "❌ Erreur de transmission réseau.";
+        });
+    }
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
 
         let payload = {
