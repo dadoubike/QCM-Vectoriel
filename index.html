@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QCM - Produits Vectoriels</title>
+    <!-- KaTeX pour les mathématiques -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" onload="rendreMaths();"></script>
+    
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f8f9fa; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .header-flex { display: flex; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-flex img { height: 60px; margin-right: 20px; }
+        .timer { font-size: 1.2rem; font-weight: bold; color: #d9534f; }
+        button { background-color: #d9534f; color: white; border: none; padding: 10px 20px; font-size: 1rem; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #c9302c; }
+        .btn-secondary { background-color: #6c757d; }
+        .btn-secondary:hover { background-color: #5a6268; }
+        .hidden { display: none !important; }
+        select, input { padding: 8px; font-size: 1rem; width: 100%; margin-top: 5px; margin-bottom: 15px; }
+        .question-box { margin-bottom: 15px; padding: 15px; background: #fdfdfd; border: 1px solid #ddd; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .radio-group { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+        .radio-group label { background: #f1f3f5; padding: 6px 12px; border-radius: 4px; cursor: pointer; border: 1px solid #ced4da; font-size: 0.9rem; font-weight: bold; }
+        .radio-group input { display: none; }
+        .radio-group input:checked + span, .radio-group label:has(input:checked) { background: #d9534f; color: white; border-color: #d9534f; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #dee2e6; padding: 10px; text-align: left; }
+        th { background-color: #f1f3f5; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-flex">
+        <img src="Logo-Saliege-Campus-HD-Transp-rouge.png" alt="Logo Saliège" onerror="this.style.display='none'">
+        <div>
+            <h2>📐 QCM : Produits Vectoriels Progressifs</h2>
+            <small>✍️ conçu par <b>D. Peyrou</b></small>
+        </div>
+    </div>
+
+    <!-- ÉTAPE 1 : IDENTIFICATION -->
+    <div id="step-identification">
+        <h3>Identification</h3>
+        <label><b>Classe :</b></label>
+        <select id="select-classe" onchange="filtrerEleves()">
+            <option value="">-- Choisir une classe --</option>
+        </select>
+
+        <label><b>Sélectionnez votre Nom et Prénom :</b></label>
+        <select id="select-eleve">
+            <option value="">-- Choisir dans la liste --</option>
+        </select>
+        <br>
+        <button onclick="commencerEvaluation()">Commencer l'évaluation</button>
+    </div>
+
+    <!-- ÉTAPE 2 : ÉVALUATION -->
+    <div id="step-test" class="hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span id="info-etudiant" style="font-size: 0.9rem; color: #555;"></span>
+            <div class="timer" id="timer-display">⏱ 05:00</div>
+        </div>
+        <hr>
+        <div style="text-align: center; margin-bottom: 15px;">
+            <img src="3Figs_geom.png" alt="Figures géométriques" style="max-width: 100%; height: auto; border-radius: 5px;" onerror="this.style.display='none'">
+            <div style="font-size: 0.8rem; color: #666;">🔍 Figure de référence pour les calculs</div>
+        </div>
+
+        <div id="titre-niveau" style="font-weight: bold; color: #333; margin-bottom: 5px;"></div>
+        <div id="enonce-question" style="font-size: 1.3rem; margin: 15px 0; font-weight: bold;"></div>
+
+        <div id="zone-saisie"></div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 25px;">
+            <button id="btn-precedent" class="btn-secondary" onclick="questionPrecedente()">⬅ Précédent</button>
+            <button id="btn-suivant" onclick="validerEtSuivant()">Enregistrer & Question Suivante ➔</button>
+        </div>
+    </div>
+
+    <!-- ÉTAPE 3 : RÉCAPITULATIF -->
+    <div id="step-review" class="hidden">
+        <h3>📋 Récapitulatif de vos réponses</h3>
+        <p>Vérifiez vos réponses ci-dessous. Vous pouvez modifier une question puis revenir directement ici.</p>
+        <div id="liste-recap"></div>
+        <br>
+        <button onclick="validerDefinitif()" style="background-color: #28a745; width: 100%; font-size: 1.1rem; padding: 12px;">🚀 VALIDER DÉFINITIVEMENT LE TEST</button>
+    </div>
+
+    <!-- ÉTAPE 4 : BILAN & CLASSEMENT -->
+    <div id="step-bilan" class="hidden">
+        <h3 id="resultat-titre"></h3>
+        <p id="resultat-temps"></p>
+        <div id="message-sauvegarde" style="font-weight: bold; color: #007bff; margin: 15px 0;">💾 Enregistrement de votre résultat en cours...</div>
+        
+        <h3>🏆 TOP 10 — Meilleurs scores</h3>
+        <div id="tableau-classement">Chargement du classement...</div>
+        <br>
+        <button onclick="location.reload()">🔄 Refaire le test</button>
+    </div>
+</div>
+
+<script>
+    // URL de votre API Google Apps Script (déployée précédemment)
+    const URL_API_GOOGLE = "https://script.google.com/macros/s/AKfycbzZCV61_da558t9mS88Pa9_jdeAAhmF-hAnV5O80K1-n2eC8g8doibYFfG-eSl3lA/exec";
+
+    let listeElevesBrute = [];
+    let questionsSelectionnees = [];
+    let reponsesEnregistrees = {};
+    let currentStep = 0;
+    let timerInterval;
+    let secondesRestantes = 300;
+    let eleveActuel = {};
+
+    // Équivalences géométriques axes
+    const EQUIVALENCES_VECTEURS = {
+        "z,0": [["z", "0"], ["z", "1"]], "z,1": [["z", "0"], ["z", "1"]],
+        "y,1": [["y", "1"], ["y", "2"]], "y,2": [["y", "1"], ["y", "2"]],
+        "x,2": [["x", "2"], ["x", "3"]], "x,3": [["x", "2"], ["x", "3"]]
+    };
+
+    const BAREME = { "A": 2, "B": 4, "C": 6, "D": 8 };
+    const NIVEAUX = ["A", "B", "C", "D"];
+
+    // Banque complète des questions
+    const BANQUE_QUESTIONS = {
+        "A": [
+            { type: "colonnes", enonce: "\\vec{x}_0 \\wedge \\vec{x}_1", solution: {signe: "+", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A : Base 0 et 1" },
+            { type: "colonnes", enonce: "\\vec{x}_1 \\wedge \\vec{x}_0", solution: {signe: "-", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A : Base 0 et 1" },
+            { type: "colonnes", enonce: "\\vec{y}_0 \\wedge \\vec{y}_1", solution: {signe: "+", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A : Base 0 et 1" }
+        ],
+        "B": [
+            { type: "colonnes", enonce: "\\vec{x}_1 \\wedge \\vec{y}_0", solution: {signe: "+", trigo: "cos", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau B : Figure 0 et 1" },
+            { type: "colonnes", enonce: "\\vec{x}_0 \\wedge \\vec{y}_1", solution: {signe: "+", trigo: "cos", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau B : Figure 0 et 1" }
+        ],
+        "C": [
+            { type: "qcm", enonce: "\\vec{y}_3 \\wedge \\vec{z}_1", propositions: ["+\\cos(\\beta)\\vec{x}_1 - \\sin(\\beta)\\sin(\\theta)\\vec{y}_1", "+\\cos(\\beta)\\vec{x}_1 + \\sin(\\beta)\\cos(\\theta)\\vec{y}_1", "-\\cos(\\beta)\\vec{x}_1 - \\sin(\\beta)\\sin(\\theta)\\vec{y}_1", "+\\sin(\\beta)\\vec{x}_1"], correct: ["+\\cos(\\beta)\\vec{x}_1 - \\sin(\\beta)\\sin(\\theta)\\vec{y}_1"], description: "Niveau C : Fig 3 vers Fig 1" }
+        ],
+        "D": [
+            { type: "qcm", enonce: "\\vec{y}_3 \\wedge \\vec{x}_1", propositions: ["-\\cos(\\beta)\\vec{z}_1 + \\sin(\\beta)\\cos(\\theta)\\vec{y}_1", "+\\cos(\\beta)\\vec{z}_1 - \\sin(\\beta)\\sin(\\theta)\\vec{x}_1", "-\\sin(\\beta)\\vec{z}_1 + \\cos(\\beta)\\cos(\\theta)\\vec{y}_1", "+\\sin(\\beta)\\vec{y}_1"], correct: ["-\\cos(\\beta)\\vec{z}_1 + \\sin(\\beta)\\cos(\\theta)\\vec{y}_1"], description: "Niveau D : Produit complexe" }
+        ]
+    };
+
+    // Chargement automatique des élèves depuis la feuille "Eleves" du Google Sheet via l'API Web
+    window.onload = function() {
+        fetch(URL_API_GOOGLE + "?action=getEleves")
+            .then(res => res.json())
+            .then(data => {
+                listeElevesBrute = data; // Format attendu [{classe: "PCSI 1", nom: "Dupont", prenom: "Jean"}, ...]
+                let classesSet = [...new Set(data.map(item => item.classe))].sort();
+                let selectClasse = document.getElementById("select-classe");
+                classesSet.forEach(c => {
+                    let opt = document.createElement("option");
+                    opt.value = c; opt.textContent = c;
+                    selectClasse.appendChild(opt);
+                });
+            })
+            .catch(() => {
+                // Fallback de secours si le mode GET n'est pas encore configuré
+                let selectClasse = document.getElementById("select-classe");
+                ["PCSI 1", "PCSI 2", "Testeur"].forEach(c => {
+                    let opt = document.createElement("option"); opt.value = c; opt.textContent = c;
+                    selectClasse.appendChild(opt);
+                });
+            });
+    };
+
+    function filtrerEleves() {
+        let classeChoisie = document.getElementById("select-classe").value;
+        let selectEleve = document.getElementById("select-eleve");
+        selectEleve.innerHTML = '<option value="">-- Choisir dans la liste --</option>';
+        
+        let elevesFiltres = listeElevesBrute.filter(e => e.classe === classeChoisie);
+        elevesFiltres.sort((a, b) => a.nom.localeCompare(b.nom));
+
+        elevesFiltres.forEach(e => {
+            let opt = document.createElement("option");
+            opt.value = `${e.nom} | ${e.prenom}`;
+            opt.textContent = `${e.nom} ${e.prenom}`;
+            selectEleve.appendChild(opt);
+        });
+    }
+
+    function melanger(arr) {
+        let a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+    }
+
+    function commencerEvaluation() {
+        let classe = document.getElementById("select-classe").value;
+        let eleveVal = document.getElementById("select-eleve").value;
+        if (!classe || !eleveVal) {
+            alert("Veuillez sélectionner votre classe et votre nom.");
+            return;
+        }
+
+        let parts = eleveVal.split(" | ");
+        eleveActuel = { nom: parts[0], prenom: parts[1], classe: classe };
+
+        // Sélection aléatoire des questions par niveau
+        questionsSelectionnees = NIVEAUX.map(niv => {
+            let pool = BANQUE_QUESTIONS[niv];
+            let q = JSON.parse(JSON.stringify(pool[Math.floor(Math.random() * pool.length)]));
+            if (q.type === "qcm") {
+                q.propositionsShuffled = melanger(q.propositions);
+            }
+            return q;
+        });
+
+        reponsesEnregistrees = {};
+        currentStep = 0;
+
+        document.getElementById("step-identification").classList.add("hidden");
+        document.getElementById("step-test").classList.remove("hidden");
+        document.getElementById("info-etudiant").innerHTML = `Étudiant : <b>${eleveActuel.nom} ${eleveActuel.prenom}</b> (${eleveActuel.classe})`;
+
+        lancerTimer();
+        afficherQuestionCourante();
+    }
+
+    function lancerTimer() {
+        secondesRestantes = 300;
+        timerInterval = setInterval(() => {
+            secondesRestantes--;
+            let m = String(Math.floor(secondesRestantes / 60)).padStart(2, '0');
+            let s = String(secondesRestantes % 60).padStart(2, '0');
+            document.getElementById("timer-display").textContent = `⏱ ${m}:${s}`;
+            if (secondesRestantes <= 0) {
+                clearInterval(timerInterval);
+                sauvegarderReponseActuelle();
+                allerAuBilan();
+            }
+        }, 1000);
+    }
+
+    function afficherQuestionCourante() {
+        let q = questionsSelectionnees[currentStep];
+        let niv = NIVEAUX[currentStep];
+
+        document.getElementById("titre-niveau").textContent = q.description;
+        document.getElementById("enonce-question").innerHTML = `$$${q.enonce} = \\dots$$`;
+
+        let repPrec = reponsesEnregistrees[currentStep] || {};
+        let html = "";
+
+        if (q.type === "colonnes") {
+            let sVal = repPrec.signe || "+";
+            let tVal = repPrec.trigo || "1";
+            let aVal = repPrec.angle || "α";
+            let vVal = repPrec.vecteur || "x";
+            let iVal = repPrec.indice || "0";
+
+            html += `<div style="display:flex; gap:20px; flex-wrap:wrap;">`;
+            
+            // Signe
+            html += `<div><label><b>Signe</b></label><div class="radio-group">`;
+            ["+", "-"].forEach(opt => {
+                html += `<label><input type="radio" name="col_signe" value="${opt}" ${sVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+            });
+            html += `</div></div>`;
+
+            // Trigo
+            html += `<div><label><b>Trigo</b></label><div class="radio-group">`;
+            ["1", "sin", "cos"].forEach(opt => {
+                html += `<label><input type="radio" name="col_trigo" value="${opt}" ${tVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+            });
+            html += `</div></div>`;
+
+            // Angle
+            html += `<div><label><b>Angle</b></label><div class="radio-group">`;
+            ["α", "θ", "β"].forEach(opt => {
+                html += `<label><input type="radio" name="col_angle" value="${opt}" ${aVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+            });
+            html += `</div></div>`;
+
+            // Vecteur
+            html += `<div><label><b>Vecteur</b></label><div class="radio-group">`;
+            ["x", "y", "z", "0"].forEach(opt => {
+                html += `<label><input type="radio" name="col_vec" value="${opt}" ${vVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+            });
+            html += `</div></div>`;
+
+            // Indice
+            html += `<div><label><b>Indice</b></label><div class="radio-group">`;
+            ["0", "1", "2", "3"].forEach(opt => {
+                html += `<label><input type="radio" name="col_ind" value="${opt}" ${iVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+            });
+            html += `</div></div>`;
+
+            html += `</div><hr><div style="margin-top:10px;"><b>Aperçu de votre réponse :</b> <span id="apercu-col" style="font-size:1.2rem;"></span></div>`;
+        } else {
+            // QCM
+            q.propositionsShuffled.forEach((prop, idx) => {
+                let checked = (repPrec.reponseDisplay === prop) ? "checked" : "";
+                html += `<label style="display:block; margin-bottom:12px; cursor:pointer; padding:10px; background:#f1f3f5; border-radius:5px;">
+                            <input type="radio" name="qcm_choice" value="${escapeHtml(prop)}" ${checked}> $$${prop}$$
+                         </label>`;
+            });
+        }
+
+        document.getElementById("zone-saisie").innerHTML = html;
+        if (q.type === "colonnes") mettreAJourApercuCol();
+        rendreMaths();
+
+        document.getElementById("btn-precedent").style.display = (currentStep === 0) ? "none" : "inline-block";
+        document.getElementById("btn-suivant").textContent = (currentStep === 3) ? "Enregistrer & Réviser les réponses 📋" : "Enregistrer & Question Suivante ➔";
+    }
+
+    function mettreAJourApercuCol() {
+        let s = document.querySelector('input[name="col_signe"]:checked')?.value || "+";
+        let t = document.querySelector('input[name="col_trigo"]:checked')?.value || "1";
+        let a = document.querySelector('input[name="col_angle"]:checked')?.value || "α";
+        let v = document.querySelector('input[name="col_vec"]:checked')?.value || "x";
+        let i = document.querySelector('input[name="col_ind"]:checked')?.value || "0";
+
+        let tStr = (t === "1") ? "" : `\\${t}(${a})`;
+        let vStr = (v === "0") ? "0" : `\\vec{${v}}_{${i}}`;
+        let latexPreview = `$$${qCouranteEnonce()} = ${s} ${tStr} ${vStr}$$`;
+        
+        let el = document.getElementById("apercu-col");
+        if(el) {
+            el.innerHTML = latexPreview;
+            rendreMaths();
+        }
+    }
+
+    function qCouranteEnonce() {
+        return questionsSelectionnees[currentStep].enonce;
+    }
+
+    function sauvegarderReponseActuelle() {
+        let q = questionsSelectionnees[currentStep];
+        let niv = NIVEAUX[currentStep];
+
+        if (q.type === "colonnes") {
+            let signe = document.querySelector('input[name="col_signe"]:checked')?.value || "+";
+            let trigo = document.querySelector('input[name="col_trigo"]:checked')?.value || "1";
+            let angle = document.querySelector('input[name="col_angle"]:checked')?.value || "α";
+            let vecteur = document.querySelector('input[name="col_vec"]:checked')?.value || "x";
+            let indice = document.querySelector('input[name="col_ind"]:checked')?.value || "0";
+
+            let choixRaw = { signe, trigo, angle, vecteur, indice };
+            
+            // Vérification exactitude colonnes
+            let sol = q.solution;
+            let signeOk = (signe === sol.signe);
+            let trigoOk = (trigo === sol.trigo);
+            let vecteurOk = (vecteur === sol.vecteur && indice === sol.indice);
+            // Gestion équivalences indices
+            let cleSol = `${sol.vecteur},${sol.indice}`;
+            if (EQUIVALENCES_VECTEURS[cleSol]) {
+                vecteurOk = EQUIVALENCES_VECTEURS[cleSol].some(eq => eq[0] === vecteur && eq[1] === indice);
+            }
+            let angleOk = (trigo === "1" || angle === sol.angle);
+            let exact = (signeOk && trigoOk && vecteurOk && angleOk);
+
+            let display = (trigo !== "1") ? `${signe} \\${trigo}(${angle}) \\vec{${vecteur}}_{${indice}}` : `${signe} \\vec{${vecteur}}_{${indice}}`;
+
+            reponsesEnregistrees[currentStep] = { niveau: niv, enonce: q.enonce, reponseDisplay: display, exact, choixRaw };
+        } else {
+            let selected = document.querySelector('input[name="qcm_choice"]:checked');
+            let val = selected ? selected.value : "";
+            let exact = q.correct.includes(val);
+            reponsesEnregistrees[currentStep] = { niveau: niv, enonce: q.enonce, reponseDisplay: val, exact };
+        }
+    }
+
+    function validerEtSuivant() {
+        sauvegarderReponseActuelle();
+        if (currentStep < 3) {
+            currentStep++;
+            afficherQuestionCourante();
+        } else {
+            afficherRecapitulatif();
+        }
+    }
+
+    function questionPrecedente() {
+        sauvegarderReponseActuelle();
+        if (currentStep > 0) {
+            currentStep--;
+            afficherQuestionCourante();
+        }
+    }
+
+    function afficherRecapitulatif() {
+        clearInterval(timerInterval);
+        document.getElementById("step-test").classList.add("hidden");
+        document.getElementById("step-review").classList.remove("hidden");
+
+        let html = "";
+        for (let i = 0; i < 4; i++) {
+            let rep = reponsesEnregistrees[i];
+            let texteRep = rep && rep.reponseDisplay ? `$$${rep.enonce} = ${rep.reponseDisplay}$$` : `<span style="color:red;">Non répondu</span>`;
+            html += `<div class="question-box">
+                        <div><b>Question ${i + 1} (Niveau ${NIVEAUX[i]}) :</b><br>${texteRep}</div>
+                        <button class="btn-secondary" onclick="modifierQuestion(${i})">✏️ Modifier</button>
+                     </div>`;
+        }
+        document.getElementById("liste-recap").innerHTML = html;
+        rendreMaths();
+    }
+
+    function modifierQuestion(idx) {
+        currentStep = idx;
+        document.getElementById("step-review").classList.add("hidden");
+        document.getElementById("step-test").classList.remove("hidden");
+        afficherQuestionCourante();
+    }
+
+    function validerDefinitif() {
+        allerAuBilan();
+    }
+
+    function allerAuBilan() {
+        document.getElementById("step-test").classList.add("hidden");
+        document.getElementById("step-review").classList.add("hidden");
+        document.getElementById("step-bilan").classList.remove("hidden");
+
+        let scoreTotal = 0;
+        for (let i = 0; i < 4; i++) {
+            if (reponsesEnregistrees[i] && reponsesEnregistrees[i].exact) {
+                scoreTotal += BAREME[NIVEAUX[i]];
+            }
+        }
+
+        let tempsSec = Math.min(300 - secondesRestantes, 300);
+        let m = String(Math.floor(tempsSec / 60)).padStart(2, '0');
+        let s = String(tempsSec % 60).padStart(2, '0');
+        let tempsStr = `${m}:${s}`;
+
+        document.getElementById("resultat-titre").textContent = `Test terminé ! Votre note : ${scoreTotal} / 20`;
+        document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
+
+        let payload = {
+            nom: eleveActuel.nom,
+            prenom: eleveActuel.prenom,
+            classe: eleveActuel.classe,
+            note: scoreTotal,
+            temps: tempsStr,
+            horodatage: new Date().toLocaleString("fr-FR"),
+            q1: reponsesEnregistrees[0]?.reponseDisplay || "Non répondu",
+            q2: reponsesEnregistrees[1]?.reponseDisplay || "Non répondu",
+            q3: reponsesEnregistrees[2]?.reponseDisplay || "Non répondu",
+            q4: reponsesEnregistrees[3]?.reponseDisplay || "Non répondu"
+        };
+
+        fetch(URL_API_GOOGLE, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        }).then(() => {
+            document.getElementById("message-sauvegarde").textContent = "✅ Votre tentative a été enregistrée avec succès !";
+            chargerClassementSheets();
+        }).catch(() => {
+            document.getElementById("message-sauvegarde").textContent = "❌ Erreur de transmission réseau.";
+        });
+    }
+
+    function chargerClassementSheets() {
+        fetch(URL_API_GOOGLE + "?action=getClassement")
+            .then(res => res.json())
+            .then(data => {
+                let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
+                data.slice(0, 10).forEach((ligne, index) => {
+                    html += `<tr><td>${index + 1}</td><td>${ligne.nom}</td><td>${ligne.prenom}</td><td>${ligne.classe}</td><td><b>${ligne.note}/20</b></td><td>${ligne.temps}</td></tr>`;
+                });
+                html += `</table>`;
+                document.getElementById("tableau-classement").innerHTML = html;
+            }).catch(() => {
+                document.getElementById("tableau-classement").innerHTML = "<p>Classement mis à jour sur Google Sheets.</p>";
+            });
+    }
+
+    function rendreMaths() {
+        if (window.renderMathInElement) {
+            renderMathInElement(document.body, {
+                delimiters: [
+                    {left: "$$", right: "$$", display: true},
+                    {left: "$", right: "$", display: false}
+                ]
+            });
+        }
+    }
+</script>
+</body>
+</html>
