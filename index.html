@@ -234,7 +234,7 @@
         }, 1000);
     }
 
-    function afficherQuestionCourante() {
+		function afficherQuestionCourante() {
         let q = questionsSelectionnees[currentStep];
         let niv = NIVEAUX[currentStep];
 
@@ -243,49 +243,60 @@
 
         let repPrec = reponsesEnregistrees[currentStep] || {};
         let raw = repPrec.choixRaw || {};
+        let sVal = raw.signe || "+";
+        let tVal = raw.trigo || "1";
+        let aVal = raw.angle || "α";
+        let vVal = raw.vecteur || "x";
+        let iVal = raw.indice || "0";
+
         let html = "";
 
         if (q.type === "colonnes") {
-            let sVal = raw.signe || "+";
-            let tVal = raw.trigo || "1";
-            let aVal = raw.angle || "α";
-            let vVal = raw.vecteur || "x";
-            let iVal = raw.indice || "0";
-
             html += `<div style="display:flex; gap:20px; flex-wrap:wrap;">`;
             
+            // Signe
             html += `<div><label><b>Signe</b></label><div class="radio-group">`;
             ["+", "-"].forEach(opt => {
-                html += `<label><input type="radio" name="col_signe" value="${opt}" ${sVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+                let isChecked = (sVal === opt) ? "checked" : "";
+                html += `<label><input type="radio" name="col_signe" value="${opt}" ${isChecked} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
+            // Trigo
             html += `<div><label><b>Trigo</b></label><div class="radio-group">`;
             ["1", "sin", "cos"].forEach(opt => {
-                html += `<label><input type="radio" name="col_trigo" value="${opt}" ${tVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+                let isChecked = (tVal === opt) ? "checked" : "";
+                html += `<label><input type="radio" name="col_trigo" value="${opt}" ${isChecked} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
+            // Angle
             html += `<div><label><b>Angle</b></label><div class="radio-group">`;
             ["α", "θ", "β"].forEach(opt => {
-                html += `<label><input type="radio" name="col_angle" value="${opt}" ${aVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+                let isChecked = (aVal === opt) ? "checked" : "";
+                html += `<label><input type="radio" name="col_angle" value="${opt}" ${isChecked} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
+            // Vecteur
             html += `<div><label><b>Vecteur</b></label><div class="radio-group">`;
             ["x", "y", "z", "0"].forEach(opt => {
-                html += `<label><input type="radio" name="col_vec" value="${opt}" ${vVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+                let isChecked = (vVal === opt) ? "checked" : "";
+                html += `<label><input type="radio" name="col_vec" value="${opt}" ${isChecked} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
+            // Indice
             html += `<div><label><b>Indice</b></label><div class="radio-group">`;
             ["0", "1", "2", "3"].forEach(opt => {
-                html += `<label><input type="radio" name="col_ind" value="${opt}" ${iVal===opt?'checked':''} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
+                let isChecked = (iVal === opt) ? "checked" : "";
+                html += `<label><input type="radio" name="col_ind" value="${opt}" ${isChecked} onchange="mettreAJourApercuCol()"><span>${opt}</span></label>`;
             });
             html += `</div></div>`;
 
             html += `</div><hr><div style="margin-top:10px;"><b>Aperçu de votre réponse :</b> <span id="apercu-col" style="font-size:1.2rem;"></span></div>`;
         } else {
+            // Partie QCM (Niveaux C et D)
             q.propositionsShuffled.forEach((prop) => {
                 let checked = (repPrec.reponseDisplay === prop) ? "checked" : "";
                 html += `<label style="display:block; margin-bottom:12px; cursor:pointer; padding:10px; background:#f1f3f5; border-radius:5px;">
@@ -301,7 +312,6 @@
         document.getElementById("btn-precedent").style.display = (currentStep === 0) ? "none" : "inline-block";
         document.getElementById("btn-suivant").textContent = (currentStep === 3) ? "Enregistrer & Réviser les réponses 📋" : "Enregistrer & Question Suivante ➔";
     }
-
     function mettreAJourApercuCol() {
         let s = document.querySelector('input[name="col_signe"]:checked')?.value || "+";
         let t = document.querySelector('input[name="col_trigo"]:checked')?.value || "1";
