@@ -72,7 +72,9 @@
         </div>
         <hr>
         <div style="text-align: center; margin-bottom: 15px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 5px; background: #fff; border: 1px solid #eee; border-radius: 5px;">
-            <img id="fig-geom" src="3Figs_geom.png" alt="Figures géométriques" style="width: 100%; max-width: none; height: auto; border-radius: 5px; cursor: zoom-in; transition: width 0.3s ease;" onclick="alternerZoom(this)" onerror="this.style.display='none'">
+            <div style="display: inline-block; min-width: 100%;">
+                <img id="fig-geom" src="3Figs_geom.png" alt="Figures géométriques" style="width: 100%; max-width: none; height: auto; border-radius: 5px; cursor: zoom-in; transition: width 0.3s ease;" onclick="alternerZoom(this)" onerror="this.style.display='none'">
+            </div>
             <div style="font-size: 0.8rem; color: #666; margin-top: 5px;">🔍 Touchez l'image pour agrandir et défiler</div>
         </div>
 
@@ -522,12 +524,18 @@
         return text.replace(/"/g, '&quot;');
     }
 	function alternerZoom(img) {
+        let container = img.parentElement;
         if (img.dataset.zoomed === "true") {
             img.style.width = "100%";
             img.dataset.zoomed = "false";
+            container.scrollLeft = 0; // Remet au centre/début
         } else {
-            img.style.width = "650px"; // Élargit l'image, augmente sa hauteur et active le défilement horizontal
+            img.style.width = "750px"; // On élargit un peu plus pour tout voir
             img.dataset.zoomed = "true";
+            // Centre automatiquement le scroll horizontal pour voir la figure du milieu au clic
+            setTimeout(() => {
+                container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
+            }, 100);
         }
     }
 </script>
