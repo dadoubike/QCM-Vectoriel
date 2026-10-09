@@ -43,6 +43,17 @@
     .star { font-size: 1.2rem; color: #ccc; transition: color 0.2s; }
     .star.selected, .star.hovered { color: #f39c12; }
     .footer-flex-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; flex-wrap: wrap; gap: 15px; }
+	
+	/* Animation de clignotement pour les 30 dernières secondes */
+    @keyframes clignoter {
+        0% { opacity: 1; }
+        50% { opacity: 0.2; }
+        100% { opacity: 1; }
+    }
+    .timer-flash {
+        animation: clignoter 0.8s infinite;
+        color: #d9534f;
+    }
 	</style>
 </head>
 <body>
@@ -226,7 +237,14 @@
     };
 
     window.onload = function() {
-        fetch(URL_API_GOOGLE + "?action=getEleves")
+        fetch(URL_API_GOOGLE + "?action=getAvis")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("moyenne-avis").textContent = data.moyenne;
+            document.getElementById("nombre-avis").textContent = data.total;
+        }).catch(err => console.error("Erreur avis:", err));
+		
+		fetch(URL_API_GOOGLE + "?action=getEleves")
             .then(res => res.json())
             .then(data => {
                 listeElevesBrute = data;
@@ -301,13 +319,23 @@
 
     function lancerTimer() {
         secondesRestantes = 300;
+        let timerElement = document.getElementById("timer-display");
+        timerElement.classList.remove("timer-flash"); // S'assure de nettoyer au démarrage
+
         timerInterval = setInterval(() => {
             secondesRestantes--;
             let m = String(Math.floor(secondesRestantes / 60)).padStart(2, '0');
             let s = String(secondesRestantes % 60).padStart(2, '0');
-            document.getElementById("timer-display").textContent = `⏱ ${m}:${s}`;
+            timerElement.textContent = `⏱ ${m}:${s}`;
+
+            // Déclenche le clignotement s'il reste 30 secondes ou moins
+            if (secondesRestantes <= 30 && secondesRestantes > 0) {
+                timerElement.classList.add("timer-flash");
+            }
+
             if (secondesRestantes <= 0) {
                 clearInterval(timerInterval);
+                timerElement.classList.remove("timer-flash");
                 sauvegarderReponseActuelle();
                 allerAuBilan();
             }
@@ -660,33 +688,52 @@
     }
 
     function noter(note) {
-        let ancienneNote = noteUtilisateur;
-        noteUtilisateur = note;
+        // Sécurité si l'élève clique avant d'avoir choisi son nom/prénom
+        let nomEleve = eleveActuel.nom || "Anonyme";
+        let prenomEleve = eleveActuel.prenom || "";
 
-        let etoiles = document.querySelectorAll('.star');
-        etoiles.forEach((s, index) => {
-            if (index < note) {
-                s.classList.add('selected');
+        let payloadAvis = {
+            action: "donnerAvis",
+            nom: nomEleve,
+            prenom: prenomEleve,
+            noteAvis: note
+        };
+
+        // Envoi à Google Sheets
+        fetch(URL_API_GOOGLE, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payloadAvis)
+        }).then(() => {
+            if (!aDejaVote) {
+                aDejaVote = true;
+                alert(`Merci pour votre avis de ${note}/5 !`);
             } else {
-                s.classList.remove('selected');
+                alert(`Votre avis a bien été mis à jour à ${note}/5 !`);
             }
+
+            // Met en cache visuel les étoiles sélectionnées
+            let etoiles = document.querySelectorAll('.star');
+            etoiles.forEach((s, index) => {
+                if (index < note) {
+                    s.classList.add('selected');
+                } else {
+                    s.classList.remove('selected');
+                }
+            });
+
+            // Petite pause de 500ms pour laisser le temps à Google Sheets d'enregistrer, 
+            // puis on recharge la vraie moyenne globale mise à jour
+            setTimeout(() => {
+                fetch(URL_API_GOOGLE + "?action=getAvis")
+                    .then(res => res.json())
+                    .then(data => {
+                        document.getElementById("moyenne-avis").textContent = data.moyenne;
+                        document.getElementById("nombre-avis").textContent = data.total;
+                    });
+            }, 500);
         });
-
-        if (!aDejaVote) {
-            // Premier vote : on ajoute un participant
-            sommeNotes += note;
-            totalAvis++;
-            aDejaVote = true;
-            alert(`Merci pour votre avis de ${note}/5 !`);
-        } else {
-            // Modification du vote : on retire l'ancienne note et on met la nouvelle
-            sommeNotes = sommeNotes - ancienneNote + note;
-            alert(`Votre avis a bien été mis à jour à ${note}/5 !`);
-        }
-
-        let nouvelleMoyenne = (sommeNotes / totalAvis).toFixed(1);
-        document.getElementById("moyenne-avis").textContent = nouvelleMoyenne;
-        document.getElementById("nombre-avis").textContent = totalAvis;
     }
 </script>
 </body>
