@@ -545,17 +545,20 @@
                             } else if (scoreTotal >= 10) {
                                 messageMotivation = `👍 Bien joué ${eleveActuel.prenom} !`;
                             } else {
-                                messageMotivation = `💪 Courage ${eleveActuel.prenom}, ne lâchez rien !`;
+                                messageMotivation = `💪 Courage ${eleveActuel.prenom} !`;
                                 actionConseillee = `<br><span style="font-size: 0.95rem; color: #d9534f; font-weight: normal;">💡 Astuce : Vous pouvez retenter le test pour progresser et améliorer votre note !</span>`;
                             }
                             
+                            // Nuance du message selon la performance par rapport au record
                             if (meilleureNote > scoreTotal) {
-                                messageRecord = `<br><span style="color: #d9534f; font-weight: bold;">🎯 Tu n'as pas battu ton record (${meilleureNote}/20), essaie encore !</span>`;
+                                messageRecord = `<br><span style="color: #d9534f; font-weight: bold;">🎯 Votre score de ${scoreTotal}/20 est en dessous de votre record (${meilleureNote}/20). Votre meilleure performance précédente reste bien enregistrée dans le classement !</span>`;
                             } else if (lignesEleve.length > 1 && scoreTotal === meilleureNote) {
-                                messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🔥 Tu as égalé ton meilleur score !</span>`;
+                                messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🔥 Vous avez égalé votre meilleur score !</span>`;
+                            } else {
+                                messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🚀 Nouveau record personnel atteint !</span>`;
                             }
                             
-                            document.getElementById("resultat-titre").innerHTML = `${messageMotivation} Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> du classement !${messageRecord}${actionConseillee}`;
+                            document.getElementById("resultat-titre").innerHTML = `${messageMotivation} Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> de cette tentative.${messageRecord}${actionConseillee}`;
                         }
 
                         let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
