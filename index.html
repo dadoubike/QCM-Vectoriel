@@ -336,7 +336,14 @@
             if (secondesRestantes <= 0) {
                 clearInterval(timerInterval);
                 timerElement.classList.remove("timer-flash");
+                
+                // 1. Sauvegarde automatique de la question en cours
                 sauvegarderReponseActuelle();
+                
+                // 2. Notification visuelle pour l'élève
+                alert("⏱ Le temps est écoulé ! Vos réponses sont enregistrées et transmises.");
+                
+                // 3. Passage direct et propre au bilan (comme s'il avait validé)
                 allerAuBilan();
             }
         }, 1000);
@@ -542,7 +549,7 @@
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
 
-        // 1. AFFICHAGE IMMÉDIAT DE LA NOTE ET DU TEMPS (sans attendre Google Sheets)
+        // 1. AFFICHAGE IMMÉDIAT DE LA NOTE ET DU TEMPS
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
         
         let messageMotivation = "";
@@ -556,7 +563,7 @@
         
         document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreTotal}/20</span>`;
 
-        // 2. ENVOI DES DONNÉES EN ARRIÈRE-PLAN (sans bloquer l'affichage)
+        // 2. ENVOI DES DONNÉES EN ARRIÈRE-PLAN
         let payload = {
             nom: eleveActuel.nom,
             prenom: eleveActuel.prenom,
@@ -581,7 +588,9 @@
             document.getElementById("message-sauvegarde").textContent = "❌ Erreur de transmission réseau.";
         });
 
-        // 3. CHARGEMENT DU CLASSEMENT (avec un léger délai pour laisser le sheet s'actualiser)
+        // 3. CHARGEMENT DU CLASSEMENT (indépendant du fetch pour s'exécuter à coup sûr)
+        document.getElementById("tableau-classement").innerHTML = "⏳ Mise à jour du classement en cours...";
+        
         setTimeout(() => {
             fetch(URL_API_GOOGLE + "?action=getClassement")
                 .then(res => res.json())
@@ -595,7 +604,7 @@
                     html += `</table>`;
                     document.getElementById("tableau-classement").innerHTML = html;
                 });
-        }, 800);
+        }, 2500);
     }
 
     function rendreMaths() {
