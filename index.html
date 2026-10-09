@@ -550,8 +550,18 @@
         let m = String(Math.floor(tempsSec / 60)).padStart(2, '0');
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
-
-        document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
+		let scoreBattlePts = 0;
+        if (scoreTotal === 20) {
+            // Pactole de 300 points - 1 point par seconde écoulée
+            scoreBattlePts = Math.max(0, 300 - tempsSec);
+            scoreFinalAffiche = `20/20 <span style="color: #f39c12;">(🐐 Arène Battle All $\Psi$ Star : ${scoreBattlePts} pts - Chrono : ${tempsStr})</span>`;
+        }
+		
+        
+		
+		
+		
+		document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
         
         let messageMotivation = "";
         if (scoreTotal >= 16) {
@@ -604,16 +614,21 @@
 
                     if (eleves20.length > 0) {
                         let mvp = eleves20[0];
+                        // Calcul du score MVP sur 300 pts (300 - temps en secondes)
+                        let partsTemps = mvp.temps.split(":");
+                        let mvpSec = parseInt(partsTemps[0]) * 60 + parseInt(partsTemps[1]);
+                        let scoreMvpPts = Math.max(0, 300 - mvpSec);
+
                         let isCurrentMvp = (mvp.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && mvp.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
                         
-                        // On affiche toujours qui est le grand MVP actuel
                         if (isCurrentMvp) {
-                            mvpElement.innerHTML = `👑 Incroyable, vous êtes l'actuel <b>MVP All $\Psi$ Star</b> (${mvp.temps}) ! Défendez votre titre !`;
+                            mvpElement.innerHTML = `🐐 GOAT : Vous ! (${eleveActuel.prenom} ${eleveActuel.nom} - ${eleveActuel.classe}) en ${mvp.temps} ⚡ (${scoreMvpPts} pts) ! Défendez votre trône !`;
                         } else {
-                            mvpElement.innerHTML = `👑 Actuel MVP : <b>${mvp.prenom} ${mvp.nom}</b> (${mvp.classe}) en <b>${mvp.temps}</b> ⚡`;
+                            // Ordre corrigé : Prénom Nom (Classe)
+                            mvpElement.innerHTML = `🐐 GOAT MVP : <b>${mvp.prenom} ${mvp.nom}</b> (${mvp.classe}) en <b>${mvp.temps}</b> ⚡ <b>(${scoreMvpPts} pts)</b>`;
                         }
                     } else {
-                        mvpElement.innerHTML = `Actuel MVP : <i>Aucun champion pour l'instant. Soyez le premier à 20/20 !</i>`;
+                        mvpElement.innerHTML = `🐐 GOAT MVP : <i>Aucun champion pour l'instant. Soyez le premier !</i>`;
                     }
 
                     // B. Gestion du bouton de la Battle : ouvert à tous ceux qui ont 20/20 pour tenter de détrôner le MVP
@@ -704,8 +719,16 @@
         etoiles.forEach(s => s.classList.remove('hovered'));
     }
 
-    function lancerBattleAllStar() {
-        if (confirm("⚔️ Vous entrez dans l'arène Battle All $\Psi$ Star !\nAttention : si vous réalisez un moins bon temps ou un score inférieur, votre position dans l'élite peut être bousculée. Êtes-vous prêt ?")) {
+	function lancerBattleAllStar() {
+        let confirmation = confirm(
+            "⚔️ ENTRÉE DANS L'ARÈNE BATTLE ALL $\Psi$ STAR ⚔️\n\n" +
+            "Attention Challenger ! Pour détrôner le GOAT MVP, le sans-faute (20/20) est exigé.\n\n" +
+            "Le classement de l'arène fonctionne au pactole : 300 points de départ, moins 1 point par seconde " +
+            "écoulée ! Le plus rapide s'empare de la couronne.\n\n" +
+            "Êtes-vous prêt à tout risquer ?"
+        );
+        
+        if (confirmation) {
             location.reload();
         }
     }
