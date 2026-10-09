@@ -641,6 +641,7 @@
 	let noteUtilisateur = 0;
     let sommeNotes = 0; 
     let totalAvis = 0;
+    let aDejaVote = false; // Permet de savoir si l'élève a déjà donné son avis
 
     function survolEtoiles(note) {
         let etoiles = document.querySelectorAll('.star');
@@ -659,7 +660,9 @@
     }
 
     function noter(note) {
+        let ancienneNote = noteUtilisateur;
         noteUtilisateur = note;
+
         let etoiles = document.querySelectorAll('.star');
         etoiles.forEach((s, index) => {
             if (index < note) {
@@ -669,15 +672,21 @@
             }
         });
 
-        // Mise à jour de la moyenne à partir de zéro
-        sommeNotes += note;
-        totalAvis++;
-        let nouvelleMoyenne = (sommeNotes / totalAvis).toFixed(1);
+        if (!aDejaVote) {
+            // Premier vote : on ajoute un participant
+            sommeNotes += note;
+            totalAvis++;
+            aDejaVote = true;
+            alert(`Merci pour votre avis de ${note}/5 !`);
+        } else {
+            // Modification du vote : on retire l'ancienne note et on met la nouvelle
+            sommeNotes = sommeNotes - ancienneNote + note;
+            alert(`Votre avis a bien été mis à jour à ${note}/5 !`);
+        }
 
+        let nouvelleMoyenne = (sommeNotes / totalAvis).toFixed(1);
         document.getElementById("moyenne-avis").textContent = nouvelleMoyenne;
         document.getElementById("nombre-avis").textContent = totalAvis;
-
-        alert(`Merci pour votre avis de ${note}/5 !`);
     }
 </script>
 </body>
