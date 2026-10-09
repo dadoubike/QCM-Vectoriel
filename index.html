@@ -170,7 +170,7 @@
         "x,2": [["x", "2"], ["x", "3"]], "x,3": [["x", "2"], ["x", "3"]]
     };
 
-    const BAREME = { "A": 2, "B": 4, "C": 6, "D": 8 };
+    const BAREME = { "A": 3, "B": 4, "C": 6, "D": 7 }; // Total = 20
     const NIVEAUX = ["A", "B", "C", "D"];
 
 	
@@ -549,6 +549,17 @@
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
 
+        // Calcul du mode "All Star SII" si l'élève a 20/20
+        let bonusAllStar = 0;
+        let scoreFinalAffiche = `${scoreTotal}/20`;
+        
+        if (scoreTotal === 20) {
+            // Pactole de 80 points - 1 point toutes les 2 secondes
+            bonusAllStar = Math.max(0, 80 - Math.floor(tempsSec / 2));
+            let scoreTotalAllStar = 20 + bonusAllStar; // sur 100
+            scoreFinalAffiche = `20/20 <span style="color: #f39c12;">(🌟 All Star SII : ${scoreTotalAllStar}/100 pts - Bonus vitesse : +${bonusAllStar})</span>`;
+        }
+
         // 1. AFFICHAGE IMMÉDIAT DE LA NOTE ET DU TEMPS
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
         
@@ -561,15 +572,16 @@
             messageMotivation = `💪 Courage ${eleveActuel.prenom} !`;
         }
         
-        document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreTotal}/20</span>`;
+        document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreFinalAffiche}</span>`;
 
-        // 2. ENVOI DES DONNÉES EN ARRIÈRE-PLAN
+        // 2. ENVOI DES DONNÉES EN ARRIÈRE-PLAN (on peut inclure le bonus dans le payload si besoin)
         let payload = {
             nom: eleveActuel.nom,
             prenom: eleveActuel.prenom,
             classe: eleveActuel.classe,
             note: scoreTotal,
             temps: tempsStr,
+            bonusAllStar: bonusAllStar, // Optionnel : pour l'enregistrer dans le Sheet
             horodatage: new Date().toLocaleString("fr-FR"),
             q1: reponsesEnregistrees[0]?.reponseDisplay || "Non répondu",
             q2: reponsesEnregistrees[1]?.reponseDisplay || "Non répondu",
@@ -588,7 +600,7 @@
             document.getElementById("message-sauvegarde").textContent = "❌ Erreur de transmission réseau.";
         });
 
-        // 3. CHARGEMENT DU CLASSEMENT (indépendant du fetch pour s'exécuter à coup sûr)
+        // 3. CHARGEMENT DU CLASSEMENT
         document.getElementById("tableau-classement").innerHTML = "⏳ Mise à jour du classement en cours...";
         
         setTimeout(() => {
