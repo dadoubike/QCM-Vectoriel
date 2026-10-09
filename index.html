@@ -136,7 +136,7 @@
         <div id="tableau-classement">Chargement du classement...</div>
         <br>
         <div style="display: flex; gap: 15px;">
-            <button onclick="location.reload()" style="background-color: #d9534f;">🔄 Refaire le test pour améliorer mon score</button>
+            <button onclick="relancerTestDirectement()" style="background-color: #d9534f;">🔄 Refaire le test pour améliorer mon score</button>
         </div>
     </div>
 
@@ -726,7 +726,7 @@
         );
         
         if (confirmation) {
-            location.reload();
+            relancerTestDirectement(); // Redémarre instantanément sans recharger la page
         }
     }
 
@@ -772,6 +772,31 @@
                     });
             }, 500);
         });
+    }
+	function relancerTestDirectement() {
+        // Nettoyage des anciennes questions et réponses
+        questionsSelectionnees = NIVEAUX.map(niv => {
+            let pool = BANQUE_QUESTIONS[niv];
+            let q = JSON.parse(JSON.stringify(pool[Math.floor(Math.random() * pool.length)]));
+            if (q.type === "qcm") {
+                q.propositionsShuffled = melanger(q.propositions);
+            }
+            return q;
+        });
+
+        reponsesEnregistrees = {};
+        currentStep = 0;
+
+        // On masque le bilan et on affiche le test
+        document.getElementById("step-bilan").classList.add("hidden");
+        document.getElementById("step-test").classList.remove("hidden");
+        
+        // L'étudiant est déjà identifié, on réaffiche juste son nom par sécurité
+        document.getElementById("info-etudiant").innerHTML = `Étudiant : <b>${eleveActuel.nom} ${eleveActuel.prenom}</b> (${eleveActuel.classe})`;
+
+        // On relance le chronomètre à 5 minutes et la première question
+        lancerTimer();
+        afficherQuestionCourante();
     }
 </script>
 </body>
