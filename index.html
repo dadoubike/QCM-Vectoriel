@@ -450,9 +450,9 @@
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
 
         let payload = {
-            nom: eleveActuel.nom,
-            prenom: eleveActuel.prenom,
-            classe: eleveActuel.classe,
+            nom: eleveActuel.nom || "",
+            prenom: eleveActuel.prenom || "",
+            classe: eleveActuel.classe || "",
             note: scoreTotal,
             temps: tempsStr,
             horodatage: new Date().toLocaleString("fr-FR"),
@@ -474,10 +474,36 @@
                 fetch(URL_API_GOOGLE + "?action=getClassement")
                     .then(res => res.json())
                     .then(data => {
-                        let rang = data.findIndex(e => 
-                            e.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && 
-                            e.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase()
-                        ) + 1;
+                        let meilleureNote = scoreTotal;
+                        let lignesEleve = [];
+                        
+                        try {
+                            lignesEleve = data.filter(e => 
+                                e && e.nom && e.prenom &&
+                                e.nom.trim().toLowerCase() === (eleveActuel.nom || "").trim().toLowerCase() && 
+                                e.prenom.trim().toLowerCase() === (eleveActuel.prenom || "").trim().toLowerCase()
+                            );
+
+                            if (lignesEleve.length > 0) {
+                                let notesExistantes = lignesEleve.map(e => Number(e.note)).filter(n => !isNaN(n));
+                                if (notesExistantes.length > 0) {
+                                    meilleureNote = Math.max(...notesExistantes, scoreTotal);
+                                }
+                            }
+                        } catch (err) {
+                            console.error("Erreur calcul meilleure note:", err);
+                        }
+
+                        let rang = 1;
+                        try {
+                            rang = data.findIndex(e => 
+                                e && e.nom && e.prenom &&
+                                e.nom.trim().toLowerCase() === (eleveActuel.nom || "").trim().toLowerCase() && 
+                                e.prenom.trim().toLowerCase() === (eleveActuel.prenom || "").trim().toLowerCase()
+                            ) + 1;
+                        } catch (err) {
+                            rang = 1;
+                        }
 
                         if (rang > 0) {
                             let messageMotivation = "";
@@ -489,11 +515,10 @@
                             } else if (scoreTotal >= 10) {
                                 messageMotivation = `👍 Bien joué ${eleveActuel.prenom} !`;
                             } else {
-                                messageMotivation = `💪 Courage ${eleveActuel.prenom}, ne lâchez rien !`;
+                                messageMotivation = `💪 Courage ${eleveActuel.prenom} !`;
                                 actionConseillee = `<br><span style="font-size: 0.95rem; color: #d9534f; font-weight: normal;">💡 Astuce : Vous pouvez retenter le test pour progresser et améliorer votre note !</span>`;
                             }
                             
-                            // Si l'élève a déjà fait une tentative précédente avec une note plus haute
                             if (meilleureNote > scoreTotal) {
                                 messageRecord = `<br><span style="color: #d9534f; font-weight: bold;">🎯 Tu n'as pas battu ton record (${meilleureNote}/20), essaie encore !</span>`;
                             } else if (lignesEleve.length > 1 && scoreTotal === meilleureNote) {
@@ -505,12 +530,18 @@
 
                         let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
                         data.slice(0, 20).forEach((ligne, index) => {
-                            let isCurrent = (ligne.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && ligne.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
+                            let nomLigne = ligne.nom || "";
+                            let prenomLigne = ligne.prenom || "";
+                            let isCurrent = (nomLigne.trim().toLowerCase() === (eleveActuel.nom || "").trim().toLowerCase() && prenomLigne.trim().toLowerCase() === (eleveActuel.prenom || "").trim().toLowerCase());
                             let styleRow = isCurrent ? `style="background-color: #fff3cd; font-weight: bold;"` : "";
                             html += `<tr ${styleRow}><td>${index + 1}</td><td>${ligne.nom}</td><td>${ligne.prenom}</td><td>${ligne.classe}</td><td><b>${ligne.note}/20</b></td><td>${ligne.temps}</td></tr>`;
                         });
                         html += `</table>`;
                         document.getElementById("tableau-classement").innerHTML = html;
+                    })
+                    .catch(err => {
+                        document.getElementById("tableau-classement").innerHTML = "❌ Erreur lors du chargement du classement.";
+                        console.error("Erreur fetch classement:", err);
                     });
             }, 600);
         }).catch(() => {
