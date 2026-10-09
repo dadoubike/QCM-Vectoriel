@@ -481,6 +481,7 @@
                         if (rang > 0) {
                             let messageMotivation = "";
                             let actionConseillee = "";
+                            let messageRecord = "";
                             
                             if (scoreTotal >= 16) {
                                 messageMotivation = `🌟 Excellent travail ${eleveActuel.prenom} !`;
@@ -491,7 +492,14 @@
                                 actionConseillee = `<br><span style="font-size: 0.95rem; color: #d9534f; font-weight: normal;">💡 Astuce : Vous pouvez retenter le test pour progresser et améliorer votre note !</span>`;
                             }
                             
-                            document.getElementById("resultat-titre").innerHTML = `${messageMotivation} Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> du classement !${actionConseillee}`;
+                            // Si l'élève a déjà fait une tentative précédente avec une note plus haute
+                            if (meilleureNote > scoreTotal) {
+                                messageRecord = `<br><span style="color: #d9534f; font-weight: bold;">🎯 Tu n'as pas battu ton record (${meilleureNote}/20), essaie encore !</span>`;
+                            } else if (lignesEleve.length > 1 && scoreTotal === meilleureNote) {
+                                messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🔥 Tu as égalé ton meilleur score !</span>`;
+                            }
+                            
+                            document.getElementById("resultat-titre").innerHTML = `${messageMotivation} Votre score de <b>${scoreTotal}/20</b> vous place à la <b>${rang}e place</b> du classement !${messageRecord}${actionConseillee}`;
                         }
 
                         let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
