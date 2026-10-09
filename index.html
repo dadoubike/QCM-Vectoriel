@@ -540,10 +540,18 @@
                                 meilleureNote = Math.max(...lignesEleve.map(e => Number(e.note)));
                             }
 
+                            // Évaluation de la performance de la tentative du jour
+                            let appreciationScore = "";
+                            if (scoreTotal >= 16) {
+                                appreciationScore = "excellent";
+                            } else if (scoreTotal >= 10) {
+                                appreciationScore = "correct";
+                            } else {
+                                appreciationScore = "un peu juste";
+                            }
+
                             if (scoreTotal >= 16) {
                                 messageMotivation = `🌟 Excellent travail ${eleveActuel.prenom} !`;
-                            } else if (scoreTotal >= 10 || meilleureNote >= 16) {
-                                messageMotivation = `🎯 Bien joué ${eleveActuel.prenom} ! Votre record de ${meilleureNote}/20 vous maintient en haut de l'affiche.`;
                             } else if (scoreTotal >= 10) {
                                 messageMotivation = `👍 Bien joué ${eleveActuel.prenom} !`;
                             } else {
@@ -551,9 +559,9 @@
                                 actionConseillee = `<br><span style="font-size: 0.95rem; color: #d9534f; font-weight: normal;">💡 Astuce : Vous pouvez retenter le test pour progresser et améliorer votre note !</span>`;
                             }
                             
-                            // Nuance propre, sans tutoiement brusque, indiquant clairement l'impact sur le classement
+                            // Nuance selon le record précédent
                             if (meilleureNote > scoreTotal) {
-                                messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🏆 Votre meilleur score de ${meilleureNote}/20 reste bien conservé à la ${rang}e place du classement ! (Tentative du jour : ${scoreTotal}/20).</span>`;
+                                messageRecord = `<br><span style="color: #d9534f; font-weight: bold;">🎯 Votre score de ${scoreTotal}/20 est ${appreciationScore}. Il ne dépasse pas votre record (${meilleureNote}/20), votre classement n'est donc pas amélioré et votre meilleure performance reste enregistrée.</span>`;
                             } else if (lignesEleve.length > 1 && scoreTotal === meilleureNote) {
                                 messageRecord = `<br><span style="color: #28a745; font-weight: bold;">🔥 Vous avez égalé votre meilleur score !</span>`;
                             } else {
