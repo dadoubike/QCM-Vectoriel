@@ -35,16 +35,16 @@
     th { background-color: #f1f3f5; }
     .footer-cc { text-align: right; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
     .footer-cc img { height: 31px; opacity: 0.8; }
-	
-		/* Style du bloc d'avis et des étoiles */
-		
+    
+        /* Style du bloc d'avis et des étoiles */
+        
     .footer-review { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555; }
     .stars-container { display: inline-flex; cursor: pointer; gap: 2px; }
     .star { font-size: 1.2rem; color: #ccc; transition: color 0.2s; }
     .star.selected, .star.hovered { color: #f39c12; }
     .footer-flex-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; flex-wrap: wrap; gap: 15px; }
-	
-	/* Animation de clignotement pour les 30 dernières secondes */
+    
+    /* Animation de clignotement pour les 30 dernières secondes */
     @keyframes clignoter {
         0% { opacity: 1; }
         50% { opacity: 0.2; }
@@ -54,7 +54,7 @@
         animation: clignoter 0.8s infinite;
         color: #d9534f;
     }
-	</style>
+    </style>
 </head>
 <body>
 
@@ -123,6 +123,15 @@
         <p id="resultat-temps"></p>
         <div id="message-sauvegarde" style="font-weight: bold; color: #007bff; margin: 15px 0;">💾 Enregistrement de votre résultat en cours...</div>
         
+        <!-- ENCART BATTLE ALL PSI* / MVP -->
+        <div id="encart-allstar" style="background: linear-gradient(135deg, #fff3cd, #ffeeba); border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px; text-align: center;">
+            <h3 style="margin-top: 0; color: #856404;">👑 Arène Battle All $\Psi$ Star</h3>
+            <p id="mvp-info" style="margin-bottom: 10px; font-size: 1.05rem;">Actuel MVP : <b>Chargement du champion...</b></p>
+            <button id="btn-battle" disabled style="background-color: #6c757d; cursor: not-allowed; opacity: 0.6; font-size: 1rem; padding: 10px 20px;" onclick="lancerBattleAllStar()">
+                🔒 Déclencher la Battle (Réservé aux 20/20)
+            </button>
+        </div>
+
         <h3>🏆 TOP 20 — Meilleurs scores</h3>
         <div id="tableau-classement">Chargement du classement...</div>
         <br>
@@ -130,6 +139,7 @@
             <button onclick="location.reload()" style="background-color: #d9534f;">🔄 Refaire le test pour améliorer mon score</button>
         </div>
     </div>
+
     <div class="footer-flex-container">
         <!-- Module d'avis par étoiles à gauche -->
         <div class="footer-review">
@@ -162,7 +172,7 @@
     let timerInterval;
     let secondesRestantes = 300;
     let eleveActuel = {};
-	let meilleureNote = 0;
+    let meilleureNote = 0;
 
     const EQUIVALENCES_VECTEURS = {
         "z,0": [["z", "0"], ["z", "1"]], "z,1": [["z", "0"], ["z", "1"]],
@@ -173,8 +183,7 @@
     const BAREME = { "A": 3, "B": 4, "C": 6, "D": 7 }; // Total = 20
     const NIVEAUX = ["A", "B", "C", "D"];
 
-	
-	const BANQUE_QUESTIONS = {
+    const BANQUE_QUESTIONS = {
         "A": [
             { type: "colonnes", enonce: "\\vec{x}_0 \\wedge \\vec{x}_1", solution: {signe: "+", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A (1/4) : Base 0 et 1" },
             { type: "colonnes", enonce: "\\vec{x}_1 \\wedge \\vec{x}_0", solution: {signe: "-", trigo: "sin", angle: "α", vecteur: "z", indice: "0"}, description: "Niveau A (1/4) : Base 0 et 1" },
@@ -243,8 +252,8 @@
             document.getElementById("moyenne-avis").textContent = data.moyenne;
             document.getElementById("nombre-avis").textContent = data.total;
         }).catch(err => console.error("Erreur avis:", err));
-		
-		fetch(URL_API_GOOGLE + "?action=getEleves")
+        
+        fetch(URL_API_GOOGLE + "?action=getEleves")
             .then(res => res.json())
             .then(data => {
                 listeElevesBrute = data;
@@ -320,7 +329,7 @@
     function lancerTimer() {
         secondesRestantes = 300;
         let timerElement = document.getElementById("timer-display");
-        timerElement.classList.remove("timer-flash"); // S'assure de nettoyer au démarrage
+        timerElement.classList.remove("timer-flash");
 
         timerInterval = setInterval(() => {
             secondesRestantes--;
@@ -328,7 +337,6 @@
             let s = String(secondesRestantes % 60).padStart(2, '0');
             timerElement.textContent = `⏱ ${m}:${s}`;
 
-            // Déclenche le clignotement s'il reste 30 secondes ou moins
             if (secondesRestantes <= 30 && secondesRestantes > 0) {
                 timerElement.classList.add("timer-flash");
             }
@@ -337,13 +345,8 @@
                 clearInterval(timerInterval);
                 timerElement.classList.remove("timer-flash");
                 
-                // 1. Sauvegarde automatique de la question en cours
                 sauvegarderReponseActuelle();
-                
-                // 2. Notification visuelle pour l'élève
                 alert("⏱ Le temps est écoulé ! Vos réponses sont enregistrées et transmises.");
-                
-                // 3. Passage direct et propre au bilan (comme s'il avait validé)
                 allerAuBilan();
             }
         }, 1000);
@@ -411,12 +414,11 @@
 
             html += `</div><hr><div style="margin-top:10px;"><b>Aperçu de votre réponse :</b> <span id="apercu-col" style="font-size:1.2rem;"></span></div>`;
         } else {
-            // Partie QCM (Niveaux C et D)
             q.propositionsShuffled.forEach((prop) => {
                 let checked = (repPrec.reponseDisplay === prop) ? "checked" : "";
                 html += `<label style="display:block; margin-bottom:12px; cursor:pointer; padding:10px; background:#f1f3f5; border-radius:5px;">
                             <input type="radio" name="qcm_choice" value="${escapeHtml(prop)}" ${checked}> $$${prop}$$
-                         </label>`;
+                       </label>`;
             });
         }
 
@@ -515,7 +517,7 @@
             html += `<div class="question-box">
                         <div><b>Question ${i + 1} (Niveau ${NIVEAUX[i]}) :</b><br>${texteRep}</div>
                         <button class="btn-secondary" onclick="modifierQuestion(${i})">✏️ Modifier</button>
-                     </div>`;
+                   </div>`;
         }
         document.getElementById("liste-recap").innerHTML = html;
         rendreMaths();
@@ -532,7 +534,7 @@
         allerAuBilan();
     }
 
-	function allerAuBilan() {
+    function allerAuBilan() {
         document.getElementById("step-test").classList.add("hidden");
         document.getElementById("step-review").classList.add("hidden");
         document.getElementById("step-bilan").classList.remove("hidden");
@@ -549,18 +551,6 @@
         let s = String(tempsSec % 60).padStart(2, '0');
         let tempsStr = `${m}:${s}`;
 
-        // Calcul du mode "All Star SII" si l'élève a 20/20
-        let bonusAllStar = 0;
-        let scoreFinalAffiche = `${scoreTotal}/20`;
-        
-        if (scoreTotal === 20) {
-            // Pactole de 80 points - 1 point toutes les 2 secondes
-            bonusAllStar = Math.max(0, 80 - Math.floor(tempsSec / 2));
-            let scoreTotalAllStar = 20 + bonusAllStar; // sur 100
-            scoreFinalAffiche = `20/20 <span style="color: #f39c12;">(🌟 All Star SII : ${scoreTotalAllStar}/100 pts - Bonus vitesse : +${bonusAllStar})</span>`;
-        }
-
-        // 1. AFFICHAGE IMMÉDIAT DE LA NOTE ET DU TEMPS
         document.getElementById("resultat-temps").innerHTML = `⏱ Temps réalisé : <b>${tempsStr}</b>`;
         
         let messageMotivation = "";
@@ -572,16 +562,14 @@
             messageMotivation = `💪 Courage ${eleveActuel.prenom} !`;
         }
         
-        document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreFinalAffiche}</span>`;
+        document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreTotal}/20</span>`;
 
-        // 2. ENVOI DES DONNÉES EN ARRIÈRE-PLAN (on peut inclure le bonus dans le payload si besoin)
         let payload = {
             nom: eleveActuel.nom,
             prenom: eleveActuel.prenom,
             classe: eleveActuel.classe,
             note: scoreTotal,
             temps: tempsStr,
-            bonusAllStar: bonusAllStar, // Optionnel : pour l'enregistrer dans le Sheet
             horodatage: new Date().toLocaleString("fr-FR"),
             q1: reponsesEnregistrees[0]?.reponseDisplay || "Non répondu",
             q2: reponsesEnregistrees[1]?.reponseDisplay || "Non répondu",
@@ -600,21 +588,64 @@
             document.getElementById("message-sauvegarde").textContent = "❌ Erreur de transmission réseau.";
         });
 
-        // 3. CHARGEMENT DU CLASSEMENT
+        // CHARGEMENT DU CLASSEMENT ET DU MVP
         document.getElementById("tableau-classement").innerHTML = "⏳ Mise à jour du classement en cours...";
         
         setTimeout(() => {
             fetch(URL_API_GOOGLE + "?action=getClassement")
                 .then(res => res.json())
                 .then(data => {
+                    let eleves20 = data.filter(ligne => Number(ligne.note) === 20);
+                    eleves20.sort((a, b) => a.temps.localeCompare(b.temps));
+
+                    let mvpElement = document.getElementById("mvp-info");
+                    let btnBattle = document.getElementById("btn-battle");
+
+                    if (eleves20.length > 0) {
+                        let mvp = eleves20[0];
+                        let isCurrentMvp = (mvp.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && mvp.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
+                        
+                        if (isCurrentMvp) {
+                            mvpElement.innerHTML = `👑 Vous êtes l'actuel <b>MVP All $\Psi$ Star</b> (${mvp.temps}) ! Défendez votre titre !`;
+                        } else {
+                            mvpElement.innerHTML = `Actuel MVP : <b>${mvp.prenom} ${mvp.nom}</b> (${mvp.classe}) en <b>${mvp.temps}</b> ⚡`;
+                        }
+                    } else {
+                        mvpElement.innerHTML = `Actuel MVP : <i>Aucun champion pour l'instant. Soyez le premier à 20/20 !</i>`;
+                    }
+
+                    if (scoreTotal === 20) {
+                        btnBattle.disabled = false;
+                        btnBattle.style.backgroundColor = "#d9534f";
+                        btnBattle.style.cursor = "pointer";
+                        btnBattle.style.opacity = "1";
+                        btnBattle.textContent = "⚔️ Lancer la Battle pour détrôner le MVP !";
+                    } else {
+                        btnBattle.disabled = true;
+                        btnBattle.style.backgroundColor = "#6c757d";
+                        btnBattle.style.cursor = "not-allowed";
+                        btnBattle.style.opacity = "0.6";
+                        btnBattle.textContent = `🔒 Mode Battle verrouillé (Votre score : ${scoreTotal}/20 - Objectif : 20/20)`;
+                    }
+
                     let html = `<table><tr><th>Rang</th><th>Nom</th><th>Prénom</th><th>Classe</th><th>Note</th><th>Temps</th></tr>`;
                     data.slice(0, 20).forEach((ligne, index) => {
                         let isCurrent = (ligne.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && ligne.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
                         let styleRow = isCurrent ? `style="background-color: #fff3cd; font-weight: bold;"` : "";
-                        html += `<tr ${styleRow}><td>${index + 1}</td><td>${ligne.nom}</td><td>${ligne.prenom}</td><td>${ligne.classe}</td><td><b>${ligne.note}/20</b></td><td>${ligne.temps}</td></tr>`;
+                        
+                        html += `<tr ${styleRow}>
+                            <td>${index + 1}</td>
+                            <td>${ligne.nom}</td>
+                            <td>${ligne.prenom}</td>
+                            <td>${ligne.classe}</td>
+                            <td><b>${ligne.note}/20</b></td>
+                            <td>${ligne.temps}</td>
+                        </tr>`;
                     });
                     html += `</table>`;
                     document.getElementById("tableau-classement").innerHTML = html;
+                    
+                    rendreMaths();
                 });
         }, 2500);
     }
@@ -633,25 +664,26 @@
     function escapeHtml(text) {
         return text.replace(/"/g, '&quot;');
     }
-	function alternerZoom(img) {
+
+    function alternerZoom(img) {
         let container = img.parentElement;
         if (img.dataset.zoomed === "true") {
             img.style.width = "100%";
             img.dataset.zoomed = "false";
-            container.scrollLeft = 0; // Remet au centre/début
+            container.scrollLeft = 0;
         } else {
-            img.style.width = "750px"; // On élargit un peu plus pour tout voir
+            img.style.width = "750px";
             img.dataset.zoomed = "true";
-            // Centre automatiquement le scroll horizontal pour voir la figure du milieu au clic
             setTimeout(() => {
                 container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
             }, 100);
         }
     }
-	let noteUtilisateur = 0;
+
+    let noteUtilisateur = 0;
     let sommeNotes = 0; 
     let totalAvis = 0;
-    let aDejaVote = false; // Permet de savoir si l'élève a déjà donné son avis
+    let aDejaVote = false;
 
     function survolEtoiles(note) {
         let etoiles = document.querySelectorAll('.star');
@@ -669,8 +701,13 @@
         etoiles.forEach(s => s.classList.remove('hovered'));
     }
 
+    function lancerBattleAllStar() {
+        if (confirm("⚔️ Vous entrez dans l'arène Battle All $\Psi$ Star !\nAttention : si vous réalisez un moins bon temps ou un score inférieur, votre position dans l'élite peut être bousculée. Êtes-vous prêt ?")) {
+            location.reload();
+        }
+    }
+
     function noter(note) {
-        // Sécurité si l'élève clique avant d'avoir choisi son nom/prénom
         let nomEleve = eleveActuel.nom || "Anonyme";
         let prenomEleve = eleveActuel.prenom || "";
 
@@ -681,7 +718,6 @@
             noteAvis: note
         };
 
-        // Envoi à Google Sheets
         fetch(URL_API_GOOGLE, {
             method: "POST",
             mode: "no-cors",
@@ -695,7 +731,6 @@
                 alert(`Votre avis a bien été mis à jour à ${note}/5 !`);
             }
 
-            // Met en cache visuel les étoiles sélectionnées
             let etoiles = document.querySelectorAll('.star');
             etoiles.forEach((s, index) => {
                 if (index < note) {
@@ -705,8 +740,6 @@
                 }
             });
 
-            // Petite pause de 500ms pour laisser le temps à Google Sheets d'enregistrer, 
-            // puis on recharge la vraie moyenne globale mise à jour
             setTimeout(() => {
                 fetch(URL_API_GOOGLE + "?action=getAvis")
                     .then(res => res.json())
