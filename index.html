@@ -35,6 +35,14 @@
     th { background-color: #f1f3f5; }
     .footer-cc { text-align: right; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; }
     .footer-cc img { height: 31px; opacity: 0.8; }
+	
+		/* Style du bloc d'avis et des étoiles */
+		
+    .footer-review { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: #555; }
+    .stars-container { display: inline-flex; cursor: pointer; gap: 2px; }
+    .star { font-size: 1.2rem; color: #ccc; transition: color 0.2s; }
+    .star.selected, .star.hovered { color: #f39c12; }
+    .footer-flex-container { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; border-top: 1px solid #eee; padding-top: 10px; flex-wrap: wrap; gap: 15px; }
 	</style>
 </head>
 <body>
@@ -111,10 +119,25 @@
             <button onclick="location.reload()" style="background-color: #d9534f;">🔄 Refaire le test pour améliorer mon score</button>
         </div>
     </div>
-    <div class="footer-cc">
-        <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank">
-            <img src="logoCC.png" alt="Licence Creative Commons BY-NC-SA">
-        </a>
+    <div class="footer-flex-container">
+        <!-- Module d'avis par étoiles à gauche -->
+        <div class="footer-review">
+            <span>Note : <b id="moyenne-avis">4.2</b>/5 (18 avis)</span>
+            <div class="stars-container" id="star-rating" onmouseleave="reinitialiserSurvol()">
+                <span class="star" data-value="1" onmouseover="survolEtoiles(1)" onclick="noter(1)">★</span>
+                <span class="star" data-value="2" onmouseover="survolEtoiles(2)" onclick="noter(2)">★</span>
+                <span class="star" data-value="3" onmouseover="survolEtoiles(3)" onclick="noter(3)">★</span>
+                <span class="star" data-value="4" onmouseover="survolEtoiles(4)" onclick="noter(4)">★</span>
+                <span class="star" data-value="5" onmouseover="survolEtoiles(5)" onclick="noter(5)">★</span>
+            </div>
+        </div>
+
+        <!-- Logo Creative Commons à droite -->
+        <div>
+            <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.fr" target="_blank">
+                <img src="logoCC.png" alt="Licence Creative Commons BY-NC-SA" style="height: 31px; opacity: 0.8;">
+            </a>
+        </div>
     </div>
 </div>
 
@@ -614,6 +637,36 @@
                 container.scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
             }, 100);
         }
+    }
+	let noteUtilisateur = 0;
+
+    function survolEtoiles(note) {
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach((s, index) => {
+            if (index < note) {
+                s.classList.add('hovered');
+            } else {
+                s.classList.remove('hovered');
+            }
+        });
+    }
+
+    function reinitialiserSurvol() {
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach(s => s.classList.remove('hovered'));
+    }
+
+    function noter(note) {
+        noteUtilisateur = note;
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach((s, index) => {
+            if (index < note) {
+                s.classList.add('selected');
+            } else {
+                s.classList.remove('selected');
+            }
+        });
+        alert(`Merci pour votre avis de ${note}/5 !`);
     }
 </script>
 </body>
