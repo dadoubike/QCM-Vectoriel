@@ -122,7 +122,7 @@
     <div class="footer-flex-container">
         <!-- Module d'avis par étoiles à gauche -->
         <div class="footer-review">
-            <span>Note : <b id="moyenne-avis">4.2</b>/5 (18 avis)</span>
+            <span>Note : <b id="moyenne-avis">4.2</b>/5 (<span id="nombre-avis">18</span> avis)</span>
             <div class="stars-container" id="star-rating" onmouseleave="reinitialiserSurvol()">
                 <span class="star" data-value="1" onmouseover="survolEtoiles(1)" onclick="noter(1)">★</span>
                 <span class="star" data-value="2" onmouseover="survolEtoiles(2)" onclick="noter(2)">★</span>
@@ -639,6 +639,46 @@
         }
     }
 	let noteUtilisateur = 0;
+    let sommeNotes = 0; 
+    let totalAvis = 0;
+
+    function survolEtoiles(note) {
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach((s, index) => {
+            if (index < note) {
+                s.classList.add('hovered');
+            } else {
+                s.classList.remove('hovered');
+            }
+        });
+    }
+
+    function reinitialiserSurvol() {
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach(s => s.classList.remove('hovered'));
+    }
+
+    function noter(note) {
+        noteUtilisateur = note;
+        let etoiles = document.querySelectorAll('.star');
+        etoiles.forEach((s, index) => {
+            if (index < note) {
+                s.classList.add('selected');
+            } else {
+                s.classList.remove('selected');
+            }
+        });
+
+        // Mise à jour de la moyenne à partir de zéro
+        sommeNotes += note;
+        totalAvis++;
+        let nouvelleMoyenne = (sommeNotes / totalAvis).toFixed(1);
+
+        document.getElementById("moyenne-avis").textContent = nouvelleMoyenne;
+        document.getElementById("nombre-avis").textContent = totalAvis;
+
+        alert(`Merci pour votre avis de ${note}/5 !`);
+    }
 
     function survolEtoiles(note) {
         let etoiles = document.querySelectorAll('.star');
