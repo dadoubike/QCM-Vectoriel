@@ -595,6 +595,7 @@
             fetch(URL_API_GOOGLE + "?action=getClassement")
                 .then(res => res.json())
                 .then(data => {
+                    // A. Identifier l'actuel MVP (le premier à 20/20 avec le temps le plus rapide)
                     let eleves20 = data.filter(ligne => Number(ligne.note) === 20);
                     eleves20.sort((a, b) => a.temps.localeCompare(b.temps));
 
@@ -605,21 +606,23 @@
                         let mvp = eleves20[0];
                         let isCurrentMvp = (mvp.nom.trim().toLowerCase() === eleveActuel.nom.trim().toLowerCase() && mvp.prenom.trim().toLowerCase() === eleveActuel.prenom.trim().toLowerCase());
                         
+                        // On affiche toujours qui est le grand MVP actuel
                         if (isCurrentMvp) {
-                            mvpElement.innerHTML = `👑 Vous êtes l'actuel <b>MVP All $\Psi$ Star</b> (${mvp.temps}) ! Défendez votre titre !`;
+                            mvpElement.innerHTML = `👑 Incroyable, vous êtes l'actuel <b>MVP All $\Psi$ Star</b> (${mvp.temps}) ! Défendez votre titre !`;
                         } else {
-                            mvpElement.innerHTML = `Actuel MVP : <b>${mvp.prenom} ${mvp.nom}</b> (${mvp.classe}) en <b>${mvp.temps}</b> ⚡`;
+                            mvpElement.innerHTML = `👑 Actuel MVP : <b>${mvp.prenom} ${mvp.nom}</b> (${mvp.classe}) en <b>${mvp.temps}</b> ⚡`;
                         }
                     } else {
                         mvpElement.innerHTML = `Actuel MVP : <i>Aucun champion pour l'instant. Soyez le premier à 20/20 !</i>`;
                     }
 
+                    // B. Gestion du bouton de la Battle : ouvert à tous ceux qui ont 20/20 pour tenter de détrôner le MVP
                     if (scoreTotal === 20) {
                         btnBattle.disabled = false;
                         btnBattle.style.backgroundColor = "#d9534f";
                         btnBattle.style.cursor = "pointer";
                         btnBattle.style.opacity = "1";
-                        btnBattle.textContent = "⚔️ Lancer la Battle pour détrôner le MVP !";
+                        btnBattle.textContent = "⚔️ Entrer dans l'arène et tenter de battre le MVP !";
                     } else {
                         btnBattle.disabled = true;
                         btnBattle.style.backgroundColor = "#6c757d";
