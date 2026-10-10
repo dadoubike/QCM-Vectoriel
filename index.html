@@ -613,7 +613,11 @@
             }
             correctionHtml += `</div>`;
         }
-        document.getElementById("correction-detaillee").innerHTML = correctionHtml;
+        	let elCorrection = document.getElementById("correction-detaillee");
+			if (elCorrection) {
+				elCorrection.innerHTML = correctionHtml;
+				rendreMaths(); // 👈 C'est ce appel qui va forcer KaTeX à transformer vos formules dans la correction instantanément !
+			}
 
         let payload = {
             nom: eleveActuel.nom,
