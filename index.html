@@ -132,6 +132,11 @@
                 🔒 Déclencher la Battle (Réservé aux 20/20)
             </button>
         </div>
+		
+		<h3>📖 Correction détaillée de votre tentative</h3>
+        <div id="correction-detaillee" style="margin-bottom: 25px;"></div>
+		
+		
 
         <h3>🏆 TOP 20 — Meilleurs scores</h3>
         <div id="tableau-classement">Chargement du classement...</div>
@@ -575,6 +580,40 @@
         }
         
         document.getElementById("resultat-titre").innerHTML = `${messageMotivation}<br><span style="color: #28a745; font-weight: bold;">🎯 Votre score : ${scoreTotal}/20</span>`;
+		
+		let correctionHtml = "";
+        for (let i = 0; i < 4; i++) {
+            let q = questionsSelectionnees[i];
+            let rep = reponsesEnregistrees[i];
+            let estCorrect = rep && rep.exact;
+            
+            let statutStyle = estCorrect ? "color: #28a745; font-weight: bold;" : "color: #d9534f; font-weight: bold;";
+            let statutTexte = estCorrect ? "✅ Correct" : "❌ Incorrect";
+            
+            let reponseEleve = rep && rep.reponseDisplay ? `$$${rep.enonce} = ${rep.reponseDisplay}$$` : "Non répondu";
+            
+            let solutionTexte = "";
+            if (q.type === "colonnes") {
+                let sol = q.solution;
+                let tStr = (sol.trigo === "1") ? "" : `\\${sol.trigo}(${sol.angle})`;
+                solutionTexte = `$$${q.enonce} = ${sol.signe} ${tStr} \\vec{${sol.vecteur}}_{${sol.indice}}$$`;
+            } else {
+                solutionTexte = `$$${q.enonce} = ${q.correct[0]}$$`;
+            }
+
+            correctionHtml += `<div style="background: #fdfdfd; border: 1px solid #ddd; padding: 12px; border-radius: 5px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between;">
+                    <span><b>Question ${i + 1} (${NIVEAUX[i]})</b> : ${q.description}</span>
+                    <span style="${statutStyle}">${statutTexte}</span>
+                </div>
+                <div style="margin-top: 8px;">Votre réponse : ${reponseEleve}</div>`;
+            
+            if (!estCorrect) {
+                correctionHtml += `<div style="margin-top: 5px; color: #28a745;">Bonne réponse attendue : ${solutionTexte}</div>`;
+            }
+            correctionHtml += `</div>`;
+        }
+        document.getElementById("correction-detaillee").innerHTML = correctionHtml;
 
         let payload = {
             nom: eleveActuel.nom,
