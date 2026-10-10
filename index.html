@@ -164,7 +164,7 @@
 
 <script>
     const URL_API_GOOGLE = "https://script.google.com/macros/s/AKfycbzZCV61_da558t9mS88Pa9_jdeAAhmF-hAnV5O80K1-n2eC8g8doibYFfG-eSl3lA/exec";
-
+	let modeBattle = false;
     let listeElevesBrute = [];
     let questionsSelectionnees = [];
     let reponsesEnregistrees = {};
@@ -296,6 +296,7 @@
     }
 
     function commencerEvaluation() {
+		modeBattle = false; // Mode normal par défaut
         let classe = document.getElementById("select-classe").value;
         let eleveVal = document.getElementById("select-eleve").value;
         if (!classe || !eleveVal) {
@@ -581,6 +582,7 @@
             note: scoreTotal,
             temps: tempsStr,
             horodatage: new Date().toLocaleString("fr-FR"),
+			modeBattle: modeBattle, // <-- On transmet l'information au serveur
             q1: reponsesEnregistrees[0]?.reponseDisplay || "Non répondu",
             q2: reponsesEnregistrees[1]?.reponseDisplay || "Non répondu",
             q3: reponsesEnregistrees[2]?.reponseDisplay || "Non répondu",
@@ -726,7 +728,8 @@
         );
         
         if (confirmation) {
-            relancerTestDirectement(); // Redémarre instantanément sans recharger la page
+        modeBattle = true; // On active le mode Battle "sans pitié"
+        relancerTestDirectement(); // Redémarre instantanément sans recharger la page
         }
     }
 
