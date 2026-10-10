@@ -777,6 +777,8 @@
         });
     }
 	function relancerTestDirectement() {
+        modeBattle = false; // On sécurise en remettant le mode normal
+        
         // Nettoyage des anciennes questions et réponses
         questionsSelectionnees = NIVEAUX.map(niv => {
             let pool = BANQUE_QUESTIONS[niv];
