@@ -15,6 +15,7 @@
     
     /* En-tête responsive : logo et titre propres sur mobile et PC */
     .header-flex { display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-direction: column; text-align: center; }
+    .header-flex { display: flex; align-items: center; justify-content: center; border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 20px; flex-direction: column; text-align: center; }
     .header-flex img { height: 60px; margin-bottom: 10px; margin-right: 0; }
     .header-flex h2 { font-size: 1.3rem; margin: 0 0 5px 0; word-break: normal; }
     
@@ -728,11 +729,11 @@
         );
         
         if (confirmation) {
-        modeBattle = true; // On active le mode Battle "sans pitié"
-        relancerTestDirectement(); // Redémarre instantanément sans recharger la page
+            modeBattle = true; // On force explicitement le mode Battle à true
+            lancerTestEnCours(); // On lance le test sans repasser modeBattle à false
         }
     }
-
+	
     function noter(note) {
         let nomEleve = eleveActuel.nom || "Anonyme";
         let prenomEleve = eleveActuel.prenom || "";
@@ -777,9 +778,12 @@
         });
     }
 	function relancerTestDirectement() {
-        modeBattle = false; // On sécurise en remettant le mode normal
-        
-        // Nettoyage des anciennes questions et réponses
+        modeBattle = false; // Mode normal par défaut pour protéger son score
+        lancerTestEnCours();
+    }
+
+    // Fonction auxiliaire pour éviter les conflits
+    function lancerTestEnCours() {
         questionsSelectionnees = NIVEAUX.map(niv => {
             let pool = BANQUE_QUESTIONS[niv];
             let q = JSON.parse(JSON.stringify(pool[Math.floor(Math.random() * pool.length)]));
@@ -792,14 +796,11 @@
         reponsesEnregistrees = {};
         currentStep = 0;
 
-        // On masque le bilan et on affiche le test
         document.getElementById("step-bilan").classList.add("hidden");
         document.getElementById("step-test").classList.remove("hidden");
         
-        // L'étudiant est déjà identifié, on réaffiche juste son nom par sécurité
         document.getElementById("info-etudiant").innerHTML = `Étudiant : <b>${eleveActuel.nom} ${eleveActuel.prenom}</b> (${eleveActuel.classe})`;
 
-        // On relance le chronomètre à 5 minutes et la première question
         lancerTimer();
         afficherQuestionCourante();
     }
